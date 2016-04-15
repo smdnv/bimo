@@ -21,11 +21,12 @@ bimo args = do
 
 doesExist :: FilePath -> IO ()
 doesExist p = do
+    logInfo $ "Does exist: " ++ p
     exists <- doesFileExist p
     if exists
        then return ()
        else do exists <- doesDirectoryExist p
-               unless exists $ error "Directory or file does not exist"
+               unless exists . error $ "Does not exist: " ++ p
 
 logInfo :: String -> IO ()
 logInfo = putStrLn

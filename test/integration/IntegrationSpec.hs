@@ -21,9 +21,9 @@ main :: IO ()
 main =
     withSystemTempDirectory "home" $ \newHome -> do
       currDir <- canonicalizePath "test/integration"
-      runghc <- findExec "runghc"
-      app <- findExec "bimo"
-      env <- getEnvironment
+      runghc  <- findExec "runghc"
+      app     <- findExec "bimo"
+      env     <- getEnvironment
       let env' = M.toList
                $ M.insert "APP" app
                $ M.insert "HOME" newHome
@@ -31,15 +31,16 @@ main =
           testEnv = TestEnv{..}
 
       hspec $
-        context "New command tests" $
+        context "New command tests" $ do
           test "create-empty-project" testEnv
+          test "create-empty-model" testEnv
 
   where
     findExec s = do
       p <- findExecutable s
       case p of
           Just path -> return path
-          Nothing -> error $ "not found: " ++ s
+          Nothing   -> error $ "not found: " ++ s
 
 
 test :: String -> TestEnv -> Spec
@@ -48,7 +49,7 @@ test name TestEnv{..} =
       withSystemTempDirectory name $ \newDir -> do
         let main = currDir </> "tests" </> name </> "Main.hs"
             lib  = currDir </> "lib"
-            p = (proc runghc [ "-i" ++ lib
+            p    = (proc runghc [ "-i" ++ lib
                              , main]) { cwd = Just newDir, env = Just env' }
         (ec, out, err) <- readCreateProcessWithExitCode p ""
         if ec /= ExitSuccess

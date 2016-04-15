@@ -8,7 +8,10 @@ data Env = Env
     -- | Project dirs and config
   , projectConfig    :: Path Rel File
   , projectModelsDir :: Path Rel Dir
-  , projectExecDir   :: Path Rel Dir
+    -- | Model dir and config
+  , modelSrc :: Path Rel Dir
+  , modelExec :: Path Rel Dir
+  , modelConfig :: Path Rel File
     -- | Models dir and config
   , modelsDir     :: Path Rel Dir
   , modelsConfig  :: Path Rel File

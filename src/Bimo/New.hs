@@ -29,15 +29,23 @@ new :: (MonadIO m, MonadThrow m, MonadLogger m, MonadReader Env m)
     => NewOpts
     -> m ()
 new NewProject{..} = do
-    dir <- parseRelDir projectName
-    exists <- doesDirExist dir
-    if exists
-        then throwM $ AlreadyExists projectName
-        else createEmptyProject dir
-new NewModel{..} =
-    liftIO $ print modelName
+  dir <- parseRelDir projectName
+  checkExists dir createEmptyProject
+new NewModel{..} = do
+  model <- parseRelDir modelName
+  checkExists dir createEmptyModel
 new NewTemplate{..} =
     liftIO $ print templateName
+
+checkExists :: (MonadIO m, MonadThrow m, MonadLogger m, MonadReader Env m)
+            => Path Rel Dir
+            -> (Path Rel Dir -> m ())
+            -> m ()
+checkExists dir action = do
+  exists <- doesDirExist dir
+  if exists
+     then throwM . AlreadyExists $ toFilePath dir
+     else action dir
 
 createEmptyProject :: (MonadIO m, MonadThrow m, MonadLogger m, MonadReader Env m)
                    => Path Rel Dir
@@ -45,9 +53,13 @@ createEmptyProject :: (MonadIO m, MonadThrow m, MonadLogger m, MonadReader Env m
 createEmptyProject dir = do
     Env{..} <- ask
     createDir dir
-    setCurrentDir dir
-    createDir projectModelsDir
-    liftIO $ B.writeFile (toFilePath projectConfig) emptyProjectConfig
+    createDir $ dir </> projectModelsDir
+    liftIO $ B.writeFile (toFilePath $ dir </> projectConfig) emptyProjectConfig
+
+-- createEmptyModel :: (MonadIO m, MonadThrow m, MonadLogger m, MonadReader Env m)
+--                  => Path Rel Dir
+--                  -> m ()
+-- createEmptyModel model = do
 
 data NewException
     = AlreadyExists !String

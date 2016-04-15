@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 module Bimo
     (run)
     where
@@ -14,13 +15,17 @@ import Bimo.New
 
 run :: IO ()
 run = do
-  env <- Env <$> getAppUserDataDir "bimo"
-             <*> parseRelFile "config.yaml"
-             <*> parseRelDir "models"
-             <*> parseRelDir ".exec"
-             <*> parseRelDir "models"
-             <*> parseRelFile "models.yaml"
-             <*> parseRelDir "templates"
+  appDir           <- getAppUserDataDir "bimo"
+  projectConfig    <- parseRelFile      "config.yaml"
+  projectModelsDir <- parseRelDir       "models"
+  modelSrc         <- parseRelDir       "src"
+  modelExec        <- parseRelDir       "exec"
+  modelConfig      <- parseRelFile      "model.yaml"
+  modelsDir        <- parseRelDir       "models"
+  modelsConfig     <- parseRelFile      "models.yaml"
+  templatesDir     <- parseRelDir       "templates"
+  let env = Env{..}
+
   args <- execParser parser
   case args of
       New opts -> runStdoutLoggingT $ runReaderT (new opts) env
