@@ -21,6 +21,7 @@ library
                      , Bimo.Build
                      , Bimo.Types.Env
                      , Bimo.Types.Config.Project
+                     , Bimo.Types.Config.Model
   build-depends:       base >= 4.7 && < 5
                      , optparse-applicative
                      , mtl
@@ -33,7 +34,7 @@ library
                      , bytestring
                      , path
                      , path-io
-                     , path-extra
+                     , filepath
   default-language:    Haskell2010
 
 executable bimo
