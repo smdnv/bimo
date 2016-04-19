@@ -12,7 +12,7 @@
 --   usage ...
 --   args ...
 --   etc
--- lang: c
+-- language: c
 -- libs:
 --   - pipes
 --   - hamming
@@ -24,13 +24,14 @@ import Data.Yaml
 import Data.Yaml.Pretty
 import qualified Data.ByteString as B
 import Data.Aeson.Encode.Pretty (keyOrder)
+import Data.Maybe (fromMaybe)
 
 data Model = Model
     { modelName :: !String
     , category  :: !String
     , version   :: !String
     , descr     :: !String
-    , lang      :: !String
+    , language  :: !String
     , libs      :: ![String]
     } deriving (Eq, Show)
 
@@ -40,7 +41,7 @@ instance FromJSON Model where
     category  <- v .: "category"
     version   <- v .: "version"
     descr     <- v .: "descr"
-    lang      <- v .: "lang"
+    language  <- v .: "lang"
     libs      <- v .: "libs"
     return Model{..}
 
@@ -50,20 +51,26 @@ instance ToJSON Model where
     , "category" .= category
     , "version"  .= version
     , "descr"    .= descr
-    , "lang"     .= lang
+    , "language" .= language
     , "libs"     .= libs
     ]
 
 -- add opts: lang, category
-emptyModelConfig :: String -> B.ByteString
-emptyModelConfig name =
+emptyModelConfig :: String
+                 -> Maybe String
+                 -> Maybe String
+                 -> B.ByteString
+emptyModelConfig name category language =
     let o = keyOrder [ "name"
                      , "category"
                      , "version"
                      , "descr"
-                     , "lang"
+                     , "language"
                      , "libs"
                      ]
-        c = setConfCompare o defConfig
-        m = Model name "none" "0.0.1" "" "" []
-     in encodePretty c m
+        cat   = fromMaybe "none" category
+        lang  = fromMaybe "" language
+        descr = "model description there"
+        conf  = setConfCompare o defConfig
+        model = Model name cat "0.0.1" descr lang []
+     in encodePretty conf model

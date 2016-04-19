@@ -29,6 +29,12 @@ new = New <$> opts
     model = NewModel
       <$> strOption (short 'm' <> metavar "MODEL_NAME"
                                <> help "Create new model for models lib")
+      <*> optional (strOption (short 'c'
+        <> metavar "MODEL_CATEGORY"
+        <> help "Specify model category"))
+      <*> optional (strOption (short 'l'
+        <> metavar "MODEL_LANG"
+        <> help "Specify model language"))
     temp = NewTemplate
       <$> strOption (short 't' <> metavar "TEMPLATE_NAME"
                                <> help "Create new template from current project")
