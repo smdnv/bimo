@@ -1,12 +1,12 @@
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RecordWildCards  #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 -- | Create new project
 
 module Bimo.New
     ( NewOpts (..)
-    , new)
-    where
+    , new
+    ) where
 
 import Control.Monad.Reader
 import Control.Monad.Logger
@@ -51,7 +51,7 @@ checkExists :: (MonadIO m, MonadThrow m, MonadLogger m, MonadReader Env m)
 checkExists dir action = do
     exists <- doesDirExist dir
     if exists
-       then throwM . AlreadyExists $ toFilePath dir
+       then throwM $ AlreadyExists dir
        else action dir
 
 createEmptyProject :: (MonadIO m, MonadThrow m, MonadLogger m, MonadReader Env m)
@@ -79,7 +79,7 @@ createEmptyModel cat lang modelDir = do
 
 
 data NewException
-    = AlreadyExists !String
+    = AlreadyExists !(Path Rel Dir)
     deriving (Show)
 
 instance Exception NewException

@@ -24,50 +24,49 @@ data TestEnv = TestEnv
 main :: IO ()
 main =
     withSystemTempDirectory "home" $ \newHome -> do
-      currDir <- canonicalizePath "test/integration"
-      runghc  <- findExec "runghc"
-      app     <- findExec "bimo"
-      env     <- getEnvironment
-      let home = newHome
-          appData = home </> ".bimo"
-          env' = M.toList
-               $ M.insert "BIMO" app
-               $ M.insert "BIMO_DATA" appData
-               $ M.insert "HOME" newHome
-               $ M.fromList env
-          testEnv = TestEnv{..}
+        currDir <- canonicalizePath "test/integration"
+        runghc  <- findExec "runghc"
+        app     <- findExec "bimo"
+        env     <- getEnvironment
+        let home = newHome
+            appData = home </> ".bimo"
+            env' = M.toList
+                $ M.insert "BIMO" app
+                $ M.insert "BIMO_DATA" appData
+                $ M.insert "HOME" newHome
+                $ M.fromList env
+            testEnv = TestEnv{..}
 
-      hspec $
-        context "New command tests" $ do
-          test "create-empty-project" testEnv
-          test "create-empty-model" testEnv
-
+        hspec $
+            context "New command tests" $ do
+            test "create-empty-project" testEnv
+            test "create-empty-model" testEnv
   where
     findExec s = do
-      p <- findExecutable s
-      case p of
-          Just path -> return path
-          Nothing   -> error $ "not found: " ++ s
+        p <- findExecutable s
+        case p of
+            Just path -> return path
+            Nothing   -> error $ "not found: " ++ s
 
 
 test :: String -> TestEnv -> Spec
 test name TestEnv{..} =
     it name $
-      withSystemTempDirectory name $ \newDir -> do
-        -- removeDirectoryRecursive appData
-        let testDir = currDir </> "tests" </> name
-            main = testDir </>  "Main.hs"
-            lib  = currDir </> "lib"
-            p    = (proc runghc [ "-i" ++ lib
-                                , main]) { cwd = Just newDir
-                                         , env = Just env' }
+        withSystemTempDirectory name $ \newDir -> do
+            -- removeDirectoryRecursive appData
+            let testDir = currDir </> "tests" </> name
+                main = testDir </>  "Main.hs"
+                lib  = currDir </> "lib"
+                p    = (proc runghc [ "-i" ++ lib
+                                    , main]) { cwd = Just newDir
+                                            , env = Just env' }
 
-        copyFiles (testDir </> "files") newDir
+            copyFiles (testDir </> "files") newDir
 
-        (ec, out, err) <- readCreateProcessWithExitCode p ""
-        if ec /= ExitSuccess
-            then throwIO $ TestFailure ec out err
-            else return ()
+            (ec, out, err) <- readCreateProcessWithExitCode p ""
+            if ec /= ExitSuccess
+                then throwIO $ TestFailure ec out err
+                else return ()
 
 copyFiles :: FilePath -> FilePath -> IO ()
 copyFiles srcRoot dstRoot = do
@@ -93,12 +92,12 @@ getDirContents path = do
     foldlM func ([], []) content
   where
     func (dirs, files) p = do
-      let relPath = path </> p
-      testDir <- doesDirectoryExist relPath
-      return $
-        if testDir
-           then (relPath : dirs, files)
-           else (dirs, relPath : files)
+        let relPath = path </> p
+        testDir <- doesDirectoryExist relPath
+        return $
+            if testDir
+            then (relPath : dirs, files)
+            else (dirs, relPath : files)
 
 getDirContentsRecur :: FilePath -> IO ([FilePath], [FilePath])
 getDirContentsRecur path = do

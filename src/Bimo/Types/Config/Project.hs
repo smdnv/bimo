@@ -17,17 +17,16 @@ data Project = Project
     } deriving (Eq, Show)
 
 data ModelConfig
-  = UserModel
-    { srcFile   :: !String
-    , modelLang :: !String
-    , execArgs  :: ![String]
-    }
-  | LibModel
-    { modelName :: !String
-    , version   :: !String
-    , execArgs  :: ![String]
-    }
-  deriving (Eq, Show)
+    = UserModel
+        { modelName :: !String
+        , execArgs  :: ![String]
+        }
+    | LibModel
+        { modelName :: !String
+        , version   :: !String
+        , execArgs  :: ![String]
+        }
+    deriving (Eq, Show)
 
 instance FromJSON Project where
     parseJSON (Object v) =
@@ -41,14 +40,13 @@ instance ToJSON Project where
 
 instance FromJSON ModelConfig where
     parseJSON (Object v) = asum
-      [ UserModel <$> v .: "srcFile" <*> v .: "modelLang" <*> v .: "execArgs"
+      [ UserModel <$> v .: "modelName" <*> v .: "execArgs"
       , LibModel <$> v .: "modelName" <*> v .: "version" <*> v .: "execArgs"
       ]
 
 instance ToJSON ModelConfig where
     toJSON UserModel{..} = object
-      [ "srcFile"   .= srcFile
-      , "modelLang" .= modelLang
+      [ "modelName" .= modelName
       , "execArgs"  .= execArgs
       ]
     toJSON LibModel{..} = object
