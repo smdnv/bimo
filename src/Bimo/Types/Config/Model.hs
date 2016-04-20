@@ -41,7 +41,7 @@ instance FromJSON Model where
     category  <- v .: "category"
     version   <- v .: "version"
     descr     <- v .: "descr"
-    language  <- v .: "lang"
+    language  <- v .: "language"
     libs      <- v .: "libs"
     return Model{..}
 

@@ -20,6 +20,8 @@ import Bimo.Types.Env
 import Bimo.Types.Config.Project
 import Bimo.Types.Config.Model
 
+import Bimo.Config
+
 data BuildOpts
     = BuildProject
     | BuildModel
@@ -33,7 +35,8 @@ build BuildModel = do
     Env{..} <- ask
     exists <- doesFileExist modelConfig
     unless exists $ throwM $ NotFoundModelConfig modelConfig
-    liftIO $ print 123
+    m <- obtainModelConfig modelConfig
+    liftIO $ print m
 
     -- read config
     -- read build script

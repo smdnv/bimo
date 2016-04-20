@@ -37,10 +37,13 @@ main =
                 $ M.fromList env
             testEnv = TestEnv{..}
 
-        hspec $
+        hspec $ do
             context "New command tests" $ do
-            test "create-empty-project" testEnv
-            test "create-empty-model" testEnv
+                test "create-empty-project" testEnv
+                test "create-empty-model" testEnv
+            context "Build command tests" $ do
+                test "build-simple-model" testEnv
+
   where
     findExec s = do
         p <- findExecutable s

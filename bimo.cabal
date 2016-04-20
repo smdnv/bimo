@@ -16,12 +16,13 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Bimo
-                     , Bimo.Commands
-                     , Bimo.New
-                     , Bimo.Build
                      , Bimo.Types.Env
                      , Bimo.Types.Config.Project
                      , Bimo.Types.Config.Model
+                     , Bimo.Commands
+                     , Bimo.New
+                     , Bimo.Build
+                     , Bimo.Config
   build-depends:       base >= 4.7 && < 5
                      , optparse-applicative
                      , mtl
