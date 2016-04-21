@@ -16,7 +16,9 @@ run cmd args = do
 bimo :: [String] -> IO ()
 bimo args = do
     exec <- getEnv "BIMO"
-    (ec, _, _) <- run exec args
+    (ec, out, err) <- run exec args
+    -- putStrLn out
+    -- putStrLn err
     unless (ec == ExitSuccess) (error "Should successfully finish, but fail")
 
 bimoFail :: [String] -> IO String
@@ -26,8 +28,8 @@ bimoFail args = do
     unless (ec /= ExitSuccess) (error "Should fail, but successfully finish")
     return err
 
-bimoFailAndStdErrContent :: [String] -> [String] -> IO ()
-bimoFailAndStdErrContent args ms = do
+bimoFailAndStderrContent :: [String] -> [String] -> IO ()
+bimoFailAndStderrContent args ms = do
     err <- bimoFail args
     stringContents err ms
 

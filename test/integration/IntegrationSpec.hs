@@ -42,7 +42,8 @@ main =
                 test "create-empty-project" testEnv
                 test "create-empty-model" testEnv
             context "Build command tests" $ do
-                test "build-simple-model" testEnv
+                test "build-simple-c-model" testEnv
+                test "build-simple-c-model-with-lib" testEnv
 
   where
     findExec s = do

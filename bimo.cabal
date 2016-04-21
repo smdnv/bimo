@@ -50,7 +50,7 @@ executable bimo
                      , monad-logger
   default-language:    Haskell2010
 
-test-suite bimo-test
+test-suite bimo-test-integration
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             integration/IntegrationSpec.hs

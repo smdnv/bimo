@@ -1,0 +1,18 @@
+import TestLib
+import System.Directory
+
+main :: IO ()
+main = do
+    -- Fail when not found model config
+    renameFile "model.yaml" "hide-model.yaml"
+    bimoFailAndStderrContent ["build", "-m"] ["Not found model config"]
+
+    -- Fail when build model
+    renameFile "hide-model.yaml" "model.yaml"
+    renameFile "src/simple-model.c" "src/hide-simple-model.c"
+    bimoFailAndStderrContent ["build", "-m"] ["Failure when build model"]
+
+    -- Successful build
+    renameFile "src/hide-simple-model.c" "src/simple-model.c"
+    bimo ["build", "-m"]
+    doesExist "exec/simple-model"

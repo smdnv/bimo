@@ -46,11 +46,24 @@ build BuildModel = do
         p = proc (fromAbsFile script) [srcDir ++ src, dstDir ++ dst]
 
     (ec, out, err) <- liftIO $ readCreateProcessWithExitCode p ""
-    unless (ec == ExitSuccess) $ throwM $ ModelBuildFailure out err
+
+    liftIO $ print ec
+    liftIO $ putStrLn err
+    liftIO $ putStrLn out
+
+    unless (ec == ExitSuccess) $ throwM $ ModelBuildFailure dst out err
 
 data BuildException
     = NotFoundModelConfig !(Path Rel File)
-    | ModelBuildFailure !String !String
-    deriving (Show)
+    | ModelBuildFailure !String !String !String
 
 instance Exception BuildException
+
+instance Show BuildException where
+    show (NotFoundModelConfig path) =
+        "Not found model config: " ++ show path
+    show (ModelBuildFailure name out err) = concat
+        [ "Failure when build model: " ++ name ++ "\n"
+        , "stdout: " ++ out ++ "\n"
+        , "stderr: " ++ err ++ "\n"
+        ]
