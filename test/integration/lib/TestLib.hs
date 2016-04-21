@@ -8,29 +8,29 @@ import System.Exit
 import Control.Monad
 import Data.List
 
-run :: FilePath -> [String] -> IO (ExitCode, String, String)
-run cmd args = do
-    logInfo $ "Run: " ++ cmd ++ " " ++ unwords args
-    readCreateProcessWithExitCode (proc cmd args) ""
+run :: FilePath -> [String] -> IO ExitCode
+run exec args = do
+    logInfo $ "Run: " ++ exec ++ " " ++ unwords args
+    (_, _, _, ph) <- createProcess (proc exec args)
+    waitForProcess ph
 
 bimo :: [String] -> IO ()
 bimo args = do
     exec <- getEnv "BIMO"
-    (ec, out, err) <- run exec args
-    -- putStrLn out
-    -- putStrLn err
+    ec <- run exec args
     unless (ec == ExitSuccess) (error "Should successfully finish, but fail")
 
-bimoFail :: [String] -> IO String
+bimoFail :: [String] -> IO ()
 bimoFail args = do
     exec <- getEnv "BIMO"
-    (ec, _, err) <- run exec args
+    ec <- run exec args
     unless (ec /= ExitSuccess) (error "Should fail, but successfully finish")
-    return err
 
 bimoFailAndStderrContent :: [String] -> [String] -> IO ()
 bimoFailAndStderrContent args ms = do
-    err <- bimoFail args
+    exec <- getEnv "BIMO"
+    (ec, out, err) <- readCreateProcessWithExitCode (proc exec args) ""
+    unless (ec /= ExitSuccess) (error "Should fail, but successfully finish")
     stringContents err ms
 
 doesExist :: FilePath -> IO ()
