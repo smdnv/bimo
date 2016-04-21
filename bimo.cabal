@@ -30,6 +30,7 @@ library
                      , exceptions
                      , monad-logger
                      , directory
+                     , process
                      , yaml
                      , aeson-pretty
                      , bytestring

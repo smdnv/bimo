@@ -9,6 +9,7 @@ import System.Exit
 import System.FilePath
 import System.Posix.Files
 import Control.Exception
+import Control.Monad
 import qualified Data.Map as M
 import Test.Hspec
 
@@ -33,7 +34,6 @@ main =
             env' = M.toList
                 $ M.insert "BIMO" app
                 $ M.insert "BIMO_DATA" appData
-                $ M.insert "HOME" newHome
                 $ M.fromList env
             testEnv = TestEnv{..}
 
@@ -56,20 +56,26 @@ test :: String -> TestEnv -> Spec
 test name TestEnv{..} =
     it name $
         withSystemTempDirectory name $ \newDir -> do
-            -- removeDirectoryRecursive appData
+            removeDirRecur appData
             let testDir = currDir </> "tests" </> name
                 main = testDir </>  "Main.hs"
                 lib  = currDir </> "lib"
                 p    = (proc runghc [ "-i" ++ lib
                                     , main]) { cwd = Just newDir
-                                            , env = Just env' }
+                                             , env = Just env' }
 
+            copyFiles (testDir </> "app") appData
             copyFiles (testDir </> "files") newDir
 
             (ec, out, err) <- readCreateProcessWithExitCode p ""
             if ec /= ExitSuccess
                 then throwIO $ TestFailure ec out err
                 else return ()
+
+removeDirRecur :: String -> IO ()
+removeDirRecur path = do
+    exists <- doesDirectoryExist path
+    when exists $ removeDirectoryRecursive path
 
 copyFiles :: FilePath -> FilePath -> IO ()
 copyFiles srcRoot dstRoot = do
@@ -82,10 +88,9 @@ copyFiles srcRoot dstRoot = do
                           . splitPath
                           )
         (dstDirs, dstFiles) = (convertPath srcDirs, convertPath srcFiles)
-        dirs  = zip srcDirs dstDirs
         files = zip srcFiles dstFiles
 
-    mapM_ (uncurry createSymbolicLink) dirs
+    mapM_ (createDirectoryIfMissing True) dstDirs
     mapM_ (uncurry createSymbolicLink) files
 
 getDirContents :: FilePath -> IO ([FilePath], [FilePath])
@@ -105,7 +110,7 @@ getDirContents path = do
 getDirContentsRecur :: FilePath -> IO ([FilePath], [FilePath])
 getDirContentsRecur path = do
     contents <- getDirContents path
-    foldl' mappend contents <$> mapM getDirContentsRecur (fst contents)
+    liftM (foldl' mappend contents) $ mapM getDirContentsRecur (fst contents)
 
 data TestFailure = TestFailure ExitCode String String
 

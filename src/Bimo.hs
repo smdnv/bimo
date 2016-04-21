@@ -1,4 +1,5 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TemplateHaskell #-}
 module Bimo
     (run)
     where
@@ -8,6 +9,7 @@ import Control.Monad.Reader
 import Control.Monad.Logger
 import Path
 import Path.IO
+import System.Environment
 
 import Bimo.Types.Env
 import Bimo.Commands
@@ -16,16 +18,19 @@ import Bimo.Build
 
 run :: IO ()
 run = do
-    appDir           <- getAppUserDataDir "bimo"
-    projectConfig    <- parseRelFile      "config.yaml"
-    projectModelsDir <- parseRelDir       "models"
-    modelSrc         <- parseRelDir       "src"
-    modelExec        <- parseRelDir       "exec"
-    modelConfig      <- parseRelFile      "model.yaml"
-    modelsDir        <- parseRelDir       "models"
-    modelsConfig     <- parseRelFile      "models.yaml"
-    templatesDir     <- parseRelDir       "templates"
-    let env = Env{..}
+    -- appDataDir <- getAppUserDataDir "bimo"
+    appDataDir <- getEnv "BIMO_DATA" >>= parseAbsDir
+    let appDir           = appDataDir
+        projectConfig    = $(mkRelFile "config.yaml")
+        projectModelsDir = $(mkRelDir "models")
+        modelSrc         = $(mkRelDir "src")
+        modelExec        = $(mkRelDir "exec")
+        modelConfig      = $(mkRelFile "model.yaml")
+        modelsDir        = appDataDir </> $(mkRelDir "models")
+        modelsConfig     = appDataDir </> $(mkRelFile "models.yaml")
+        templatesDir     = appDataDir </> $(mkRelDir "templates")
+        buildScriptsDir  = appDataDir </> $(mkRelDir "buildscripts")
+        env              = Env{..}
 
     args <- execParser parser
     case args of

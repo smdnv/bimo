@@ -2,5 +2,6 @@ name: simple-model
 category: none
 version: '0.0.1'
 descr: model description there
-language: ''
+source: simple-model.c
+language: c
 libs: []

@@ -6,27 +6,30 @@ import System.IO
 import System.Process
 import System.Exit
 import Control.Monad
+import Data.List
 
-import qualified Data.Text as T
-import qualified Data.Text.IO as T (readFile)
-
-run :: FilePath -> [String] -> IO ExitCode
+run :: FilePath -> [String] -> IO (ExitCode, String, String)
 run cmd args = do
     logInfo $ "Run: " ++ cmd ++ " " ++ unwords args
-    (_, _, _, ph) <- createProcess (proc cmd args)
-    waitForProcess ph
+    readCreateProcessWithExitCode (proc cmd args) ""
 
 bimo :: [String] -> IO ()
 bimo args = do
     exec <- getEnv "BIMO"
-    ec <- run exec args
+    (ec, _, _) <- run exec args
     unless (ec == ExitSuccess) (error "Should successfully finish, but fail")
 
-bimoFail :: [String] -> IO ()
+bimoFail :: [String] -> IO String
 bimoFail args = do
     exec <- getEnv "BIMO"
-    ec <- run exec args
+    (ec, _, err) <- run exec args
     unless (ec /= ExitSuccess) (error "Should fail, but successfully finish")
+    return err
+
+bimoFailAndStdErrContent :: [String] -> [String] -> IO ()
+bimoFailAndStdErrContent args ms = do
+    err <- bimoFail args
+    stringContents err ms
 
 doesExist :: FilePath -> IO ()
 doesExist p = do
@@ -38,16 +41,18 @@ doesExist p = do
                unless exists . error $ "Does not exist: " ++ p
 
 fileContents :: FilePath -> [String] -> IO ()
-fileContents file match = do
-    let match' = map T.pack match
-    content <- T.readFile file
-    mapM_ (testMatch content) match'
+fileContents file ms = do
+    content <- readFile file
+    stringContents content ms
+
+stringContents :: String -> [String] -> IO ()
+stringContents content ms = do
+    mapM_ (testMatch content) ms
   where
     testMatch content match =
-        unless (T.isInfixOf match content) $
-            error $ "Not find in file: " ++ T.unpack match ++ "\n"
-                                         ++ T.unpack content
-
+        unless (isInfixOf match content) $
+            error $ "Not find in file: " ++ match ++ "\n"
+                                         ++ content
 
 logInfo :: String -> IO ()
 logInfo = putStrLn

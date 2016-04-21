@@ -7,17 +7,18 @@ module Bimo.Build
     , build
     ) where
 
+import Control.Monad
 import Control.Monad.Reader
 import Control.Monad.Logger
 import Control.Monad.Catch
 import Control.Monad.IO.Class
 import Path
 import Path.IO
-import System.FilePath (dropTrailingPathSeparator)
-import qualified Data.ByteString as B
+import System.Process
+import System.Exit
 
 import Bimo.Types.Env
-import Bimo.Types.Config.Project
+-- import Bimo.Types.Config.Project
 import Bimo.Types.Config.Model
 
 import Bimo.Config
@@ -35,16 +36,21 @@ build BuildModel = do
     Env{..} <- ask
     exists <- doesFileExist modelConfig
     unless exists $ throwM $ NotFoundModelConfig modelConfig
-    m <- obtainModelConfig modelConfig
-    liftIO $ print m
+    m <- readModelConfig modelConfig
+    script <- getBuildScript $ language m
 
-    -- read config
-    -- read build script
-    -- find required script
-    -- build
+    let srcDir = fromRelDir modelSrc
+        dstDir = fromRelDir modelExec
+        src = srcFile m
+        dst = modelName m
+        p = proc (fromAbsFile script) [srcDir ++ src, dstDir ++ dst]
+
+    (ec, out, err) <- liftIO $ readCreateProcessWithExitCode p ""
+    unless (ec == ExitSuccess) $ throwM $ ModelBuildFailure out err
 
 data BuildException
     = NotFoundModelConfig !(Path Rel File)
+    | ModelBuildFailure !String !String
     deriving (Show)
 
 instance Exception BuildException

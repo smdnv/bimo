@@ -32,6 +32,7 @@ data Model = Model
     , version   :: !String
     , descr     :: !String
     , language  :: !String
+    , srcFile   :: !String
     , libs      :: ![String]
     } deriving (Eq, Show)
 
@@ -42,6 +43,7 @@ instance FromJSON Model where
     version   <- v .: "version"
     descr     <- v .: "descr"
     language  <- v .: "language"
+    srcFile   <- v .: "source"
     libs      <- v .: "libs"
     return Model{..}
 
@@ -52,6 +54,7 @@ instance ToJSON Model where
     , "version"  .= version
     , "descr"    .= descr
     , "language" .= language
+    , "source"   .= srcFile
     , "libs"     .= libs
     ]
 
@@ -66,11 +69,12 @@ emptyModelConfig name category language =
                      , "version"
                      , "descr"
                      , "language"
+                     , "source"
                      , "libs"
                      ]
         cat   = fromMaybe "none" category
         lang  = fromMaybe "" language
         descr = "model description there"
         conf  = setConfCompare o defConfig
-        model = Model name cat "0.0.1" descr lang []
+        model = Model name cat "0.0.1" descr lang "" []
      in encodePretty conf model
