@@ -48,11 +48,11 @@ fileContents file ms = do
     stringContents content ms
 
 stringContents :: String -> [String] -> IO ()
-stringContents content ms = do
+stringContents content ms =
     mapM_ (testMatch content) ms
   where
     testMatch content match =
-        unless (isInfixOf match content) $
+        unless (match `isInfixOf` content) $
             error $ "Not find in file: " ++ match ++ "\n"
                                          ++ content
 

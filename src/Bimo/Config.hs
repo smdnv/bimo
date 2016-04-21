@@ -35,12 +35,31 @@ getBuildScript lang = do
     let path = scriptsDir </> scriptName
 
     exists <- doesFileExist path
-    if exists
-       then return path
-       else throwM $ NotFoundBuildScript scriptName
+    unless exists $ throwM $ NotFoundBuildScript scriptName
+    return path
+
+getLibPaths :: (MonadIO m, MonadThrow m, MonadLogger m, MonadReader Env m)
+            => String
+            -> [String]
+            -> m [FilePath]
+getLibPaths lang libs = do
+    langDir <- parseRelDir lang
+    dir <- asks libsDir
+    let prefix = dir </> langDir
+
+    mapM (processPath prefix) libs
+  where
+    processPath prefix p = do
+        libDir <- parseRelDir p
+        let path = prefix </> libDir
+        exists <- doesDirExist path
+        unless exists $ throwM $ LibraryDoesNotExist path
+        return $ fromAbsDir path
+
 
 data ReadAppEnvironment
     = NotFoundBuildScript !(Path Rel File)
+    | LibraryDoesNotExist !(Path Abs Dir)
     deriving (Show)
 
 instance Exception ReadAppEnvironment

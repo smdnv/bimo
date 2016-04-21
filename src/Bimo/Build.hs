@@ -38,19 +38,16 @@ build BuildModel = do
     unless exists $ throwM $ NotFoundModelConfig modelConfig
     m <- readModelConfig modelConfig
     script <- getBuildScript $ language m
+    libPaths <- getLibPaths (language m) (libs m)
 
     let srcDir = fromRelDir modelSrc
         dstDir = fromRelDir modelExec
         src = srcFile m
         dst = modelName m
-        p = proc (fromAbsFile script) [srcDir ++ src, dstDir ++ dst]
+        args = [srcDir ++ src, dstDir ++ dst] ++ libPaths
+        p = proc (fromAbsFile script) args
 
     (ec, out, err) <- liftIO $ readCreateProcessWithExitCode p ""
-
-    liftIO $ print ec
-    liftIO $ putStrLn err
-    liftIO $ putStrLn out
-
     unless (ec == ExitSuccess) $ throwM $ ModelBuildFailure dst out err
 
 data BuildException

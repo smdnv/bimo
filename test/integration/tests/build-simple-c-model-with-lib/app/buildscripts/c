@@ -3,11 +3,50 @@
 
 {-# LANGUAGE OverloadedStrings #-}
 
+import Prelude hiding (FilePath)
 import Turtle
-
+import Filesystem.Path.CurrentOS (encode)
 main = do
-    (src:dst:_) <- arguments
-    ec <- proc "gcc" [src, "-o", dst] empty
+    (src:dst:lib:_) <- arguments
+    buildLib $ fromText lib
+    -- ec <- proc "gcc" [ src, "-o", dst] empty
+    print $ "-I" <> lib <> "simple-lib.h"
+
+    -- ec <- proc "gcc" [ "-c"
+    --            , "-I" <> lib
+    --            , src
+    --            ] empty
+
+    -- if (ec == ExitSuccess)
+    --     then return ()
+    --     else exit $ ExitFailure 1
+    ec <- proc "gcc" [ "-o"
+               , dst
+               , encode $ dropExtension (fromText src) <.> "c"
+               , "-L" <> lib
+               , "-l" <> "simple-lib"
+               ] empty
+
     if (ec == ExitSuccess)
         then return ()
         else exit $ ExitFailure 1
+
+buildLib :: FilePath -> IO ()
+buildLib p = do
+    let name = fromString "simple-lib"
+        srcFile = name <.> "c"
+        fullPath = encode $ p </> srcFile
+        fullPathObj = encode $ p </> name <.> "o"
+        fullPathLib = encode $ p </> ("libsimple-lib") <.> "a"
+        cmd1 = "gcc " <> "-c " <> fullPath <> " -o " <> fullPathObj
+        cmd2 = "ar rcs " <> fullPathLib <> " " <> fullPathObj
+    ec <- shell cmd1 empty
+    if (ec == ExitSuccess)
+        then return ()
+        else exit $ ExitFailure 1
+    ec <- shell cmd2 empty
+    if (ec == ExitSuccess)
+        then return ()
+        else exit $ ExitFailure 1
+    return ()
+

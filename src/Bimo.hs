@@ -30,6 +30,7 @@ run = do
         modelsConfig     = appDataDir </> $(mkRelFile "models.yaml")
         templatesDir     = appDataDir </> $(mkRelDir "templates")
         buildScriptsDir  = appDataDir </> $(mkRelDir "buildscripts")
+        libsDir          = appDataDir </> $(mkRelDir "libs")
         env              = Env{..}
 
     args <- execParser parser

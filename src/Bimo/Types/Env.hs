@@ -19,6 +19,6 @@ data Env = Env
     , templatesDir  :: !(Path Abs Dir)
       -- | Build scripts dir
     , buildScriptsDir :: !(Path Abs Dir)
-    -- , libsDir         :: !FilePath
+    , libsDir         :: !(Path Abs Dir)
     -- , templatesConfig :: !FilePath
     }
