@@ -7,6 +7,7 @@ module Bimo.Build
     , build
     ) where
 
+import Data.List
 import Control.Monad
 import Control.Monad.Reader
 import Control.Monad.Logger
@@ -44,8 +45,16 @@ build BuildModel = do
         dstDir = fromRelDir modelExec
         src = srcFile m
         dst = modelName m
-        args = [srcDir ++ src, dstDir ++ dst] ++ libPaths
+        args = [ "-s"
+               , srcDir ++ src
+               , "-d"
+               , dstDir ++ dst
+               , "-l"
+               , foldl (++) "" $ intersperse ":" libPaths
+               ]
         p = proc (fromAbsFile script) args
+
+    liftIO $ print args
 
     (ec, out, err) <- liftIO $ readCreateProcessWithExitCode p ""
     unless (ec == ExitSuccess) $ throwM $ ModelBuildFailure dst out err

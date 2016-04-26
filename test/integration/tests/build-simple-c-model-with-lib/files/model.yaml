@@ -4,4 +4,4 @@ version: '0.0.1'
 descr: model description there
 language: c
 source: simple-model.c
-libs: [simple-lib]
+libs: [simple_lib]

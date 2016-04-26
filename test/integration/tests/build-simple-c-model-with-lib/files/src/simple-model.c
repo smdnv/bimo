@@ -1,4 +1,4 @@
-/* #include "simple-lib.h" */
+#include "simple_lib.h"
 
 int main (void)
 {

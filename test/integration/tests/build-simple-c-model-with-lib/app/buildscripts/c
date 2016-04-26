@@ -5,48 +5,56 @@
 
 import Prelude hiding (FilePath)
 import Turtle
-import Filesystem.Path.CurrentOS (encode)
+import qualified Data.Text as T
+import Filesystem.Path.CurrentOS (encode, decode)
+
+data Args = Args ![FilePath] !FilePath ![FilePath]
+
+parser :: Parser Args
+parser = Args <$> opt parse "src" 's' "The source files"
+              <*> optPath "dest" 'd' "The dest dir"
+              <*> opt parse "libs" 'l' "The using libs"
+  where
+      parse src = return $ map decode $ T.splitOn ":" src
+
 main = do
-    (src:dst:lib:_) <- arguments
-    buildLib $ fromText lib
-    -- ec <- proc "gcc" [ src, "-o", dst] empty
-    print $ "-I" <> lib <> "simple-lib.h"
+    (Args src dst libs) <- options "A simple build script" parser
+    mapM_ buildLib libs
 
-    -- ec <- proc "gcc" [ "-c"
-    --            , "-I" <> lib
-    --            , src
-    --            ] empty
-
-    -- if (ec == ExitSuccess)
-    --     then return ()
-    --     else exit $ ExitFailure 1
-    ec <- proc "gcc" [ "-o"
-               , dst
-               , encode $ dropExtension (fromText src) <.> "c"
-               , "-L" <> lib
-               , "-l" <> "simple-lib"
+    let libPath = encode $ head libs
+        libName = encode $ dirname $ head libs
+        src' = head src
+        args = [ "-o"
+               , encode $ dst
+               , encode $ dropExtension src' <.> "c"
+               , "-I" <> libPath
+               , "-L" <> libPath
+               , "-l" <> libName
                ] empty
 
-    if (ec == ExitSuccess)
-        then return ()
-        else exit $ ExitFailure 1
+    ec <- proc "gcc" args
+
+    unless (ec == ExitSuccess) $ error "gcc fail"
 
 buildLib :: FilePath -> IO ()
 buildLib p = do
-    let name = fromString "simple-lib"
-        srcFile = name <.> "c"
-        fullPath = encode $ p </> srcFile
+    let name        = dirname p
+        libName     = decode $ "lib" <> encode name
+        srcFile     = name <.> "c"
+        fullPath    = encode $ p </> srcFile
         fullPathObj = encode $ p </> name <.> "o"
-        fullPathLib = encode $ p </> ("libsimple-lib") <.> "a"
-        cmd1 = "gcc " <> "-c " <> fullPath <> " -o " <> fullPathObj
-        cmd2 = "ar rcs " <> fullPathLib <> " " <> fullPathObj
-    ec <- shell cmd1 empty
-    if (ec == ExitSuccess)
-        then return ()
-        else exit $ ExitFailure 1
-    ec <- shell cmd2 empty
-    if (ec == ExitSuccess)
-        then return ()
-        else exit $ ExitFailure 1
-    return ()
+        fullPathLib = encode $ p </> libName <.> "a"
+        gccArgs = [ "-c"
+                  , fullPath
+                  , "-o"
+                  , fullPathObj
+                  ]
+        arArgs  = [ "rcs"
+                  , fullPathLib
+                  , fullPathObj
+                  ]
+    ec <- proc "gcc" gccArgs empty
+    unless (ec == ExitSuccess) $ error $ "gcc error, args: " ++ show gccArgs
+    ec <- proc "ar" arArgs empty
+    unless (ec == ExitSuccess) $ error $ "ar error, args: " ++ show arArgs
 

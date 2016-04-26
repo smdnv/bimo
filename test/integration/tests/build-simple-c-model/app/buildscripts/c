@@ -3,11 +3,24 @@
 
 {-# LANGUAGE OverloadedStrings #-}
 
+import Prelude hiding (FilePath)
 import Turtle
+import qualified Data.Text as T
+import Filesystem.Path.CurrentOS (encode, decode)
+
+data Args = Args ![FilePath] !FilePath ![FilePath]
+
+parser :: Parser Args
+parser = Args <$> opt parse "src" 's' "The source files"
+              <*> optPath "dest" 'd' "The dest dir"
+              <*> opt parse "libs" 'l' "The using libs"
+  where
+      parse src = return $ map decode $ T.splitOn ":" src
 
 main = do
-    (src:dst:_) <- arguments
-    ec <- proc "gcc" [src, "-o", dst] empty
-    if (ec == ExitSuccess)
-        then return ()
-        else exit $ ExitFailure 1
+    (Args src dst libs) <- options "A simple build script" parser
+    ec <- proc "gcc" [ encode $ head src
+                     , "-o"
+                     , encode $ dst
+                     ] empty
+    unless (ec == ExitSuccess) $ error "gcc error"
