@@ -35,20 +35,18 @@ build :: (MonadIO m, MonadThrow m, MonadLogger m, MonadReader Env m)
 -- build BuildProject = do
 build BuildModel = do
     Env{..} <- ask
-    exists <- doesFileExist modelConfig
+    exists  <- doesFileExist modelConfig
     unless exists $ throwM $ NotFoundModelConfig modelConfig
-    m <- readModelConfig modelConfig
-    script <- getBuildScript $ language m
-    libPaths <- getLibPaths (language m) (libs m)
 
-    let srcDir = fromRelDir modelSrc
-        dstDir = fromRelDir modelExec
-        src = srcFile m
-        dst = modelName m
-        args = [ "-s"
-               , srcDir ++ src
+    Model{..} <- readModelConfig modelConfig
+    script    <- getBuildScript language
+    libPaths  <- getLibPaths language libs
+    files <- mapM (\p -> do path <- parseRelFile p
+                            return $ fromRelFile $ modelSrc </> path) srcFiles
+    let args = [ "-s"
+               , foldl (++) "" $ intersperse ":" files
                , "-d"
-               , dstDir ++ dst
+               , fromRelDir modelExec ++ modelName
                , "-l"
                , foldl (++) "" $ intersperse ":" libPaths
                ]
@@ -57,7 +55,7 @@ build BuildModel = do
     liftIO $ print args
 
     (ec, out, err) <- liftIO $ readCreateProcessWithExitCode p ""
-    unless (ec == ExitSuccess) $ throwM $ ModelBuildFailure dst out err
+    unless (ec == ExitSuccess) $ throwM $ ModelBuildFailure modelName out err
 
 data BuildException
     = NotFoundModelConfig !(Path Rel File)

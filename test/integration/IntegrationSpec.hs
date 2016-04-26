@@ -38,12 +38,15 @@ main =
             testEnv = TestEnv{..}
 
         hspec $ do
-            context "New command tests" $ do
+            describe "New command tests" $ do
                 test "create-empty-project" testEnv
                 test "create-empty-model" testEnv
-            context "Build command tests" $ do
-                test "build-simple-c-model" testEnv
-                test "build-simple-c-model-with-lib" testEnv
+
+            describe "Build command tests" $ do
+                context "build model" $ do
+                    test "build-simple-c-model" testEnv
+                    test "build-simple-c-model-with-lib" testEnv
+                    test "build-c-with-mult-files-and-libs" testEnv
 
   where
     findExec s = do

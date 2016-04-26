@@ -30,9 +30,9 @@ main = do
                , "-I" <> libPath
                , "-L" <> libPath
                , "-l" <> libName
-               ]
+               ] empty
 
-    ec <- proc "gcc" args empty
+    ec <- proc "gcc" args
 
     unless (ec == ExitSuccess) $ error "gcc fail"
 
