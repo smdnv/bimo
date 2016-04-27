@@ -1,7 +1,7 @@
 #include <stdio.h>
-#include "simple_lib.h"
+#include "example_lib2.h"
 
-void helloWorld()
+void exampleLib2Func()
 {
     puts("hello world");
 }

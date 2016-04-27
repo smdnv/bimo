@@ -23,7 +23,7 @@ import Bimo.Types.Config.Model
 
 data NewOpts
     = NewProject  { projectName     :: !String
-                  , srtTemplateName :: !(Maybe String)
+                  , srcTemplateName :: !(Maybe String)
                   }
     | NewModel    { modelName :: !String
                   , modelCat  :: !(Maybe String)

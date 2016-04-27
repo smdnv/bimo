@@ -1,4 +1,4 @@
-#ifndef simple_lib_h_
-#define simple_lib_h_
-void helloWorld();
+#ifndef example_lib1_h_
+#define example_lib1_h_
+void exampleLib1Func();
 #endif

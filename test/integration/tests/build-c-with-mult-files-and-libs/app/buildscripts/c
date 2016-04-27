@@ -18,23 +18,32 @@ parser = Args <$> opt parse "src" 's' "The source files"
       parse src = return $ map decode $ T.splitOn ":" src
 
 main = do
-    (Args src dst libs) <- options "A simple build script" parser
+    (Args srcFiles dst libs) <- options "A simple build script" parser
     mapM_ buildLib libs
 
-    let libPath = encode $ head libs
-        libName = encode $ dirname $ head libs
-        src' = head src
-        args = [ "-o"
-               , encode $ dst
-               , encode $ dropExtension src' <.> "c"
-               , "-I" <> libPath
-               , "-L" <> libPath
-               , "-l" <> libName
-               ] empty
+    objFiles <- mapM (compile libs) srcFiles
 
-    ec <- proc "gcc" args
+    let libPaths = map (\p -> "-L" <> encode p) libs
+        libNames = map (\p -> "-l" <> (encode $ dirname p)) libs
+        args = objFiles ++ [ "-o", encode $ dst] ++ libPaths ++ libNames
+
+    ec <- proc "gcc" args empty
 
     unless (ec == ExitSuccess) $ error "gcc fail"
+
+compile :: [FilePath] -> FilePath -> IO Text
+compile libPaths src = do
+    let paths = map (\p -> "-I" <> encode p) libPaths
+        args = [ "-c"
+               , encode src
+               , "-o"
+               , encode $ dropExtension src <.> "o"
+               ] ++ paths
+    echo $ "build obj: " <> encode src
+    ec <- proc "gcc" args empty
+    unless (ec == ExitSuccess) $ error "gcc fail"
+    return $ encode $ dropExtension src <.> "o"
+
 
 buildLib :: FilePath -> IO ()
 buildLib p = do
@@ -53,6 +62,8 @@ buildLib p = do
                   , fullPathLib
                   , fullPathObj
                   ]
+
+    echo $ "build lib: " <> fullPath
     ec <- proc "gcc" gccArgs empty
     unless (ec == ExitSuccess) $ error $ "gcc error, args: " ++ show gccArgs
     ec <- proc "ar" arArgs empty

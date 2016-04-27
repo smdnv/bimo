@@ -52,7 +52,7 @@ build BuildModel = do
                ]
         p = proc (fromAbsFile script) args
 
-    liftIO $ print args
+    liftIO $ mapM_ print args
 
     (ec, out, err) <- liftIO $ readCreateProcessWithExitCode p ""
     unless (ec == ExitSuccess) $ throwM $ ModelBuildFailure modelName out err
@@ -68,6 +68,6 @@ instance Show BuildException where
         "Not found model config: " ++ show path
     show (ModelBuildFailure name out err) = concat
         [ "Failure when build model: " ++ name ++ "\n"
-        , "stdout: " ++ out ++ "\n"
-        , "stderr: " ++ err ++ "\n"
+        , "stdout: \n" ++ out ++ "\n"
+        , "stderr: \n" ++ err ++ "\n"
         ]

@@ -66,7 +66,8 @@ test name TestEnv{..} =
                 lib  = currDir </> "lib"
                 p    = (proc runghc [ "-i" ++ lib
                                     , main]) { cwd = Just newDir
-                                             , env = Just env' }
+                                             , env = Just env'
+                                             }
 
             copyFiles (testDir </> "app") appData
             copyFiles (testDir </> "files") newDir
