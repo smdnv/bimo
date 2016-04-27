@@ -47,6 +47,8 @@ main =
                     test "build-simple-c-model" testEnv
                     test "build-simple-c-model-with-lib" testEnv
                     test "build-c-with-mult-files-and-libs" testEnv
+                context "build project" $ do
+                    test "build-project" testEnv
 
   where
     findExec s = do

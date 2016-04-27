@@ -1,0 +1,71 @@
+#!/usr/bin/env stack
+-- stack --install-ghc runghc --package turtle
+
+{-# LANGUAGE OverloadedStrings #-}
+
+import Prelude hiding (FilePath)
+import Turtle
+import qualified Data.Text as T
+import Filesystem.Path.CurrentOS (encode, decode)
+
+data Args = Args ![FilePath] !FilePath ![FilePath]
+
+parser :: Parser Args
+parser = Args <$> opt parse "src" 's' "The source files"
+              <*> optPath "dest" 'd' "The dest dir"
+              <*> opt parse "libs" 'l' "The using libs"
+  where
+      parse src = return $ map decode $ T.splitOn ":" src
+
+main = do
+    (Args srcFiles dst libs) <- options "A simple build script" parser
+    mapM_ buildLib libs
+
+    objFiles <- mapM (compile libs) srcFiles
+
+    let libPaths = map (\p -> "-L" <> encode p) libs
+        libNames = map (\p -> "-l" <> (encode $ dirname p)) libs
+        args = objFiles ++ [ "-o", encode $ dst] ++ libPaths ++ libNames
+
+    ec <- proc "gcc" args empty
+
+    unless (ec == ExitSuccess) $ error "gcc fail"
+
+compile :: [FilePath] -> FilePath -> IO Text
+compile libPaths src = do
+    let paths = map (\p -> "-I" <> encode p) libPaths
+        args = [ "-c"
+               , encode src
+               , "-o"
+               , encode $ dropExtension src <.> "o"
+               ] ++ paths
+    echo $ "build obj: " <> encode src
+    ec <- proc "gcc" args empty
+    unless (ec == ExitSuccess) $ error "gcc fail"
+    return $ encode $ dropExtension src <.> "o"
+
+
+buildLib :: FilePath -> IO ()
+buildLib p = do
+    let name        = dirname p
+        libName     = decode $ "lib" <> encode name
+        srcFile     = name <.> "c"
+        fullPath    = encode $ p </> srcFile
+        fullPathObj = encode $ p </> name <.> "o"
+        fullPathLib = encode $ p </> libName <.> "a"
+        gccArgs = [ "-c"
+                  , fullPath
+                  , "-o"
+                  , fullPathObj
+                  ]
+        arArgs  = [ "rcs"
+                  , fullPathLib
+                  , fullPathObj
+                  ]
+
+    echo $ "build lib: " <> fullPath
+    ec <- proc "gcc" gccArgs empty
+    unless (ec == ExitSuccess) $ error $ "gcc error, args: " ++ show gccArgs
+    ec <- proc "ar" arArgs empty
+    unless (ec == ExitSuccess) $ error $ "ar error, args: " ++ show arArgs
+

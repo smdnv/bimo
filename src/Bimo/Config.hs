@@ -12,7 +12,7 @@ import Path
 import Path.IO
 
 import Bimo.Types.Env
--- import Bimo.Types.Config.Project
+import Bimo.Types.Config.Project
 import Bimo.Types.Config.Model
 
 
@@ -20,6 +20,22 @@ readModelConfig :: (MonadIO m, MonadThrow m, MonadLogger m)
                 => Path Rel File
                 -> m Model
 readModelConfig p = do
+    exists <- doesFileExist p
+    unless exists $ throwM $ NotFoundModelConfig p
+    readYamlConfig p
+
+readProjectConfig :: (MonadIO m, MonadThrow m, MonadLogger m)
+                  => Path Rel File
+                  -> m Project
+readProjectConfig p = do
+    exists <- doesFileExist p
+    unless exists $ throwM $ NotFoundProjectConfig p
+    readYamlConfig p
+
+readYamlConfig :: (MonadIO m, MonadThrow m, MonadLogger m, FromJSON a)
+               => Path Rel File
+               -> m a
+readYamlConfig p = do
     let file = fromRelFile p
     decoded <- liftIO $ decodeFileEither file
     case decoded of
@@ -56,13 +72,24 @@ getLibPaths lang libs = do
         unless exists $ throwM $ LibraryDoesNotExist path
         return $ fromAbsDir path
 
-
-data ReadAppEnvironment
-    = NotFoundBuildScript !(Path Rel File)
+data ReadAppEnvException
+    = NotFoundModelConfig !(Path Rel File)
+    | NotFoundProjectConfig !(Path Rel File)
+    | NotFoundBuildScript !(Path Rel File)
     | LibraryDoesNotExist !(Path Abs Dir)
-    deriving (Show)
 
-instance Exception ReadAppEnvironment
+instance Exception ReadAppEnvException
+
+
+instance Show ReadAppEnvException where
+    show (NotFoundModelConfig path) =
+        "Not found model config: " ++ show path
+    show (NotFoundProjectConfig path) =
+        "Not found project config: " ++ show path
+    show (NotFoundBuildScript path) =
+        "Not found build script: " ++ show path
+    show (LibraryDoesNotExist path) =
+        "No library with name: " ++ show (dirname path) ++ ", path: " ++ show path
 
 
 

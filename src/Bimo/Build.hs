@@ -19,7 +19,7 @@ import System.Process
 import System.Exit
 
 import Bimo.Types.Env
--- import Bimo.Types.Config.Project
+import Bimo.Types.Config.Project
 import Bimo.Types.Config.Model
 
 import Bimo.Config
@@ -32,42 +32,64 @@ data BuildOpts
 build :: (MonadIO m, MonadThrow m, MonadLogger m, MonadReader Env m)
       => BuildOpts
       -> m ()
--- build BuildProject = do
+build BuildProject = do
+    pConf <- asks projectConfig
+    Project{..} <- readProjectConfig pConf
+
+    let modelsToBuild = foldl' (\acc m -> case m of
+                                              UserModel{} -> m : acc
+                                              LibModel{} -> acc) [] models
+    liftIO $ print modelsToBuild
 build BuildModel = do
-    Env{..} <- ask
-    exists  <- doesFileExist modelConfig
-    unless exists $ throwM $ NotFoundModelConfig modelConfig
+    mConf       <- asks modelConfig
+    Model{..}   <- readModelConfig mConf
 
-    Model{..} <- readModelConfig modelConfig
-    script    <- getBuildScript language
-    libPaths  <- getLibPaths language libs
-    files <- mapM (\p -> do path <- parseRelFile p
-                            return $ fromRelFile $ modelSrc </> path) srcFiles
-    let args = [ "-s"
-               , foldl (++) "" $ intersperse ":" files
-               , "-d"
-               , fromRelDir modelExec ++ modelName
-               , "-l"
-               , foldl (++) "" $ intersperse ":" libPaths
-               ]
-        p = proc (fromAbsFile script) args
+    name        <- parseRelFile modelName
+    execDir     <- asks modelExec
+    srcDir      <- asks modelSrc
+    buildScript <- getBuildScript language
+    libPaths    <- getLibPaths language libs
+    files       <- mapM (\p -> do path <- parseRelFile p
+                                  return $ fromRelFile $ srcDir </> path) srcFiles
 
-    liftIO $ mapM_ print args
+    let execFile = execDir </> name
 
-    (ec, out, err) <- liftIO $ readCreateProcessWithExitCode p ""
-    unless (ec == ExitSuccess) $ throwM $ ModelBuildFailure modelName out err
+    require <- requireBuild srcDir execFile
+    if require
+        then build' buildScript files execFile libPaths
+        else return ()
+  where
+    requireBuild src dst = do
+        exists <- doesFileExist dst
+        if exists
+            then do dstTime <- getModificationTime dst
+                    srcTime <- getModificationTime src
+                    return $ if dstTime > srcTime then False else True
+            else return True
+    build' script src dst libs = do
+        let args = [ "-s"
+                   , foldl (++) "" $ intersperse ":" src
+                   , "-d"
+                   , fromRelFile dst
+                   , "-l"
+                   , foldl (++) "" $ intersperse ":" libs
+                   ]
+            p = proc (fromAbsFile script) args
+
+        liftIO $ mapM_ print args
+
+        (ec, out, err) <- liftIO $ readCreateProcessWithExitCode p ""
+        unless (ec == ExitSuccess) $ throwM $ ModelBuildFailure dst out err
+
 
 data BuildException
-    = NotFoundModelConfig !(Path Rel File)
-    | ModelBuildFailure !String !String !String
+    = ModelBuildFailure !(Path Rel File) !String !String
 
 instance Exception BuildException
 
 instance Show BuildException where
-    show (NotFoundModelConfig path) =
-        "Not found model config: " ++ show path
     show (ModelBuildFailure name out err) = concat
-        [ "Failure when build model: " ++ name ++ "\n"
+        [ "Failure when build model exec: " ++ show name ++ "\n"
         , "stdout: \n" ++ out ++ "\n"
         , "stderr: \n" ++ err ++ "\n"
         ]

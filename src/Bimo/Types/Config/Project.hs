@@ -40,19 +40,19 @@ instance ToJSON Project where
 
 instance FromJSON ModelConfig where
     parseJSON (Object v) = asum
-      [ UserModel <$> v .: "modelName" <*> v .: "execArgs"
-      , LibModel <$> v .: "modelName" <*> v .: "version" <*> v .: "execArgs"
+      [ UserModel <$> v .: "name" <*> v .: "execArgs"
+      , LibModel  <$> v .: "name" <*> v .: "version" <*> v .: "execArgs"
       ]
 
 instance ToJSON ModelConfig where
     toJSON UserModel{..} = object
-      [ "modelName" .= modelName
-      , "execArgs"  .= execArgs
+      [ "name"     .= modelName
+      , "execArgs" .= execArgs
       ]
     toJSON LibModel{..} = object
-      [ "modelName" .= modelName
-      , "version"   .= version
-      , "execArgs"  .= execArgs
+      [ "name"     .= modelName
+      , "version"  .= version
+      , "execArgs" .= execArgs
       ]
 
 emptyProjectConfig :: B.ByteString
