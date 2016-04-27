@@ -72,5 +72,5 @@ emptyProjectConfig =
                      , "topology"
                      ]
         c = setConfCompare o defConfig
-        p = Project [] [] [[]]
+        p = Project (Just []) (Just []) [[]]
      in encodePretty c p

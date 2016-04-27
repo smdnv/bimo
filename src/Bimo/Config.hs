@@ -57,7 +57,7 @@ getBuildScript lang = do
 getLibPaths :: (MonadIO m, MonadThrow m, MonadLogger m, MonadReader Env m)
             => String
             -> [String]
-            -> m [FilePath]
+            -> m [Path Abs Dir]
 getLibPaths lang libs = do
     langDir <- parseRelDir lang
     dir <- asks libsDir
@@ -70,7 +70,7 @@ getLibPaths lang libs = do
         let path = prefix </> libDir
         exists <- doesDirExist path
         unless exists $ throwM $ LibraryDoesNotExist path
-        return $ fromAbsDir path
+        return path
 
 data ReadAppEnvException
     = NotFoundModelConfig !(Path Rel File)

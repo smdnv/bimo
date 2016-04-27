@@ -29,12 +29,22 @@ data BuildOpts
     | BuildModel
     deriving Show
 
-build :: (MonadIO m, MonadThrow m, MonadLogger m, MonadReader Env m)
+build :: (MonadIO m, MonadThrow m, MonadMask m, MonadLogger m, MonadReader Env m)
       => BuildOpts
       -> m ()
 build BuildProject = do
     pConf <- asks projectConfig
     p@Project{..} <- readProjectConfig pConf
+    modelsDir <- asks projectModelsDir
+
+    case userModels of
+        Just models -> do
+            mapM_ (\(UserModel n _) -> do
+                name <- parseRelDir n
+                let dir = modelsDir </> name
+                withCurrentDir dir $ build BuildModel) models
+        Nothing -> return ()
+
 
     liftIO $ print p
 build BuildModel = do
@@ -47,11 +57,11 @@ build BuildModel = do
     buildScript <- getBuildScript language
     libPaths    <- getLibPaths language libs
     files       <- mapM (\p -> do path <- parseRelFile p
-                                  return $ fromRelFile $ srcDir </> path) srcFiles
+                                  return $ srcDir </> path) srcFiles
 
     let execFile = execDir </> name
 
-    require <- requireBuild srcDir execFile
+    require <- requireBuild files execFile
     if require
         then build' buildScript files execFile libPaths
         else return ()
@@ -59,17 +69,19 @@ build BuildModel = do
     requireBuild src dst = do
         exists <- doesFileExist dst
         if exists
-            then do dstTime <- getModificationTime dst
-                    srcTime <- getModificationTime src
-                    return $ if dstTime > srcTime then False else True
+            then do times <- mapM getModificationTime src
+                    dstTime <- getModificationTime dst
+                    return $ if dstTime > (maximum times) then False else True
             else return True
     build' script src dst libs = do
-        let args = [ "-s"
-                   , foldl (++) "" $ intersperse ":" src
+        let libs' = map fromAbsDir libs
+            src' = map fromRelFile src
+            args = [ "-s"
+                   , foldl' (++) "" $ intersperse ":" src'
                    , "-d"
                    , fromRelFile dst
                    , "-l"
-                   , foldl (++) "" $ intersperse ":" libs
+                   , foldl' (++) "" $ intersperse ":" libs'
                    ]
             p = proc (fromAbsFile script) args
 
