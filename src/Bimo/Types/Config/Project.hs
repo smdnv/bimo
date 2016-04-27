@@ -12,54 +12,65 @@ import qualified Data.ByteString as B
 import Data.Aeson.Encode.Pretty (keyOrder)
 
 data Project = Project
-    { models   :: ![ModelConfig]
-    , topology :: ![[String]]
+    { userModels :: !(Maybe [UserModel])
+    , libModels  :: !(Maybe [LibModel])
+    , topology   :: ![[String]]
     } deriving (Eq, Show)
 
-data ModelConfig
-    = UserModel
-        { modelName :: !String
-        , execArgs  :: ![String]
-        }
-    | LibModel
-        { modelName :: !String
-        , version   :: !String
-        , execArgs  :: ![String]
-        }
-    deriving (Eq, Show)
+data UserModel = UserModel
+    { userModelName :: !String
+    , userModelArgs :: ![String]
+    } deriving (Eq, Show)
+
+data LibModel = LibModel
+    { libModelName :: !String
+    , version      :: !String
+    , libModelArgs :: ![String]
+    } deriving (Eq, Show)
 
 instance FromJSON Project where
     parseJSON (Object v) =
-      Project <$> v .: "models" <*> v .: "topology"
+        Project <$> v .:? "userModels"
+                <*> v .:? "libModels"
+                <*> v .: "topology"
 
 instance ToJSON Project where
     toJSON Project{..} = object
-      [ "models"   .= models
-      , "topology" .= topology
+      [ "userModels" .= userModels
+      , "libModels"  .= libModels
+      , "topology"   .= topology
       ]
 
-instance FromJSON ModelConfig where
-    parseJSON (Object v) = asum
-      [ UserModel <$> v .: "name" <*> v .: "execArgs"
-      , LibModel  <$> v .: "name" <*> v .: "version" <*> v .: "execArgs"
-      ]
+instance FromJSON UserModel where
+    parseJSON (Object v) =
+        UserModel <$> v .: "name"
+                  <*> v .: "execArgs"
 
-instance ToJSON ModelConfig where
+instance FromJSON LibModel where
+    parseJSON (Object v) =
+        LibModel  <$> v .: "name"
+                  <*> v .: "version"
+                  <*> v .: "execArgs"
+
+instance ToJSON UserModel where
     toJSON UserModel{..} = object
-      [ "name"     .= modelName
-      , "execArgs" .= execArgs
+      [ "name"     .= userModelName
+      , "execArgs" .= userModelArgs
       ]
+
+instance ToJSON LibModel where
     toJSON LibModel{..} = object
-      [ "name"     .= modelName
+      [ "name"     .= libModelName
       , "version"  .= version
-      , "execArgs" .= execArgs
+      , "execArgs" .= libModelArgs
       ]
 
 emptyProjectConfig :: B.ByteString
 emptyProjectConfig =
-    let o = keyOrder [ "models"
+    let o = keyOrder [ "userModels"
+                     , "libModels"
                      , "topology"
                      ]
         c = setConfCompare o defConfig
-        p = Project [] [[]]
+        p = Project [] [] [[]]
      in encodePretty c p

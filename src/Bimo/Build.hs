@@ -34,12 +34,9 @@ build :: (MonadIO m, MonadThrow m, MonadLogger m, MonadReader Env m)
       -> m ()
 build BuildProject = do
     pConf <- asks projectConfig
-    Project{..} <- readProjectConfig pConf
+    p@Project{..} <- readProjectConfig pConf
 
-    let modelsToBuild = foldl' (\acc m -> case m of
-                                              UserModel{} -> m : acc
-                                              LibModel{} -> acc) [] models
-    liftIO $ print modelsToBuild
+    liftIO $ print p
 build BuildModel = do
     mConf       <- asks modelConfig
     Model{..}   <- readModelConfig mConf

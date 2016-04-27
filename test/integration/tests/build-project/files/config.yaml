@@ -1,4 +1,4 @@
-models:
+userModels:
 - name: model1
   execArgs: []
 - name: model2
