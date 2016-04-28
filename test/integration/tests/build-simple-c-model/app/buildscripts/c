@@ -1,26 +1,39 @@
 #!/usr/bin/env stack
--- stack --install-ghc runghc --package turtle
+-- stack --install-ghc runghc --package shelly
 
 {-# LANGUAGE OverloadedStrings #-}
-
+{-# LANGUAGE ExtendedDefaultRules #-}
+{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 import Prelude hiding (FilePath)
-import Turtle
+import Shelly
 import qualified Data.Text as T
-import Filesystem.Path.CurrentOS (encode, decode)
+import Options.Applicative
+default (T.Text)
 
-data Args = Args ![FilePath] !FilePath ![FilePath]
+data Args = Args ![T.Text] !T.Text ![T.Text]
 
 parser :: Parser Args
-parser = Args <$> opt parse "src" 's' "The source files"
-              <*> optPath "dest" 'd' "The dest dir"
-              <*> opt parse "libs" 'l' "The using libs"
+parser = Args
+    <$> option (str >>= parseSep) (long "src"
+       <> short 's'
+       <> metavar "SRC FILES"
+       <> help "Source files")
+    <*> option (str >>= parseText) (long "dst"
+       <> short 'd'
+       <> metavar "DST FILE"
+       <> help "dest file")
+    <*> option (str >>= parseSep) (long "libs"
+       <> short 'l'
+       <> metavar "LIBS"
+       <> help "Using libs")
   where
-      parse src = return $ map decode $ T.splitOn ":" src
+    parseSep str = return $ T.splitOn ":" $ T.pack str
+    parseText str = return $ T.pack str
 
-main = do
-    (Args src dst libs) <- options "A simple build script" parser
-    ec <- proc "gcc" [ encode $ head src
-                     , "-o"
-                     , encode $ dst
-                     ] empty
-    unless (ec == ExitSuccess) $ error "gcc error"
+
+main = shelly $ verbosely $ do
+    (Args src dst libs) <- liftIO $ execParser $ info parser idm
+    run_ "gcc" [ head src
+               , "-o"
+               , dst
+               ]
