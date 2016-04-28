@@ -1,7 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 module Bimo
-    (run)
+    (bimo)
     where
 
 import Options.Applicative
@@ -15,9 +15,10 @@ import Bimo.Types.Env
 import Bimo.Commands
 import Bimo.New
 import Bimo.Build
+import Bimo.Run
 
-run :: IO ()
-run = do
+bimo :: IO ()
+bimo = do
     -- appDataDir <- getAppUserDataDir "bimo"
     appDataDir <- getEnv "BIMO_DATA" >>= parseAbsDir
     let appDir           = appDataDir
@@ -37,6 +38,7 @@ run = do
     case args of
         New opts -> runStdoutLoggingT $ runReaderT (new opts) env
         Build opts -> runStdoutLoggingT $ runReaderT (build opts) env
+        Run -> runStdoutLoggingT $ runReaderT run env
         _ -> print args
 
 

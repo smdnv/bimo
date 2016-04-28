@@ -32,9 +32,9 @@ main =
         let home = newHome
             appData = home </> ".bimo"
             env' = M.toList
-                $ M.insert "BIMO" app
-                $ M.insert "BIMO_DATA" appData
-                $ M.fromList env
+                 $ M.insert "BIMO" app
+                 $ M.insert "BIMO_DATA" appData
+                 $ M.fromList env
             testEnv = TestEnv{..}
 
         hspec $ do

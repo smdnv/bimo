@@ -37,16 +37,17 @@ build BuildProject = do
     p@Project{..} <- readProjectConfig pConf
     modelsDir <- asks projectModelsDir
 
-    case userModels of
-        Just models -> do
-            mapM_ (\(UserModel n _) -> do
-                name <- parseRelDir n
-                let dir = modelsDir </> name
-                withCurrentDir dir $ build BuildModel) models
-        Nothing -> return ()
-
+    maybe (return ()) (buildModels modelsDir) userModels
 
     liftIO $ print p
+  where
+    buildModels root models =
+        mapM_ (\(UserModel n _) -> do
+            name <- parseRelDir n
+            let dir = root </> name
+            withCurrentDir dir $ build BuildModel) models
+
+
 build BuildModel = do
     mConf       <- asks modelConfig
     Model{..}   <- readModelConfig mConf

@@ -16,4 +16,3 @@ main = do
     if (before == after)
         then return ()
         else error "time not eq"
-
