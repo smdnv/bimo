@@ -17,6 +17,7 @@ library
   hs-source-dirs:      src
   exposed-modules:     Bimo
                      , Bimo.Types.Env
+                     , Bimo.Types.Project
                      , Bimo.Types.Config.Project
                      , Bimo.Types.Config.Model
                      , Bimo.Commands
@@ -26,6 +27,7 @@ library
                      , Bimo.Run
   build-depends:       base >= 4.7 && < 5
                      , optparse-applicative
+                     , containers
                      , mtl
                      , transformers
                      , exceptions

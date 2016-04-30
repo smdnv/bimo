@@ -26,8 +26,9 @@ import Bimo.Config
 run :: (MonadIO m, MonadThrow m, MonadLogger m, MonadReader Env m)
     => m ()
 run = do
-    return ()
-    -- pConf <- asks projectConfig
-    -- p@Project{..} <- readProjectConfig pConf
+    -- return ()
+    pConf <- asks projectConfig
+    p@Project{..} <- readProjectConfig pConf
+    liftIO $ print p
     -- modelsDir <- asks projectModelsDir
 

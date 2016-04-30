@@ -63,9 +63,7 @@ build BuildModel = do
     let execFile = execDir </> name
 
     require <- requireBuild files execFile
-    if require
-        then build' buildScript files execFile libPaths
-        else return ()
+    when require $ build' buildScript files execFile libPaths
   where
     requireBuild src dst = do
         exists <- doesFileExist dst

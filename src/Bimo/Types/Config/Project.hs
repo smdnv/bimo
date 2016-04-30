@@ -24,7 +24,7 @@ data UserModel = UserModel
 
 data LibModel = LibModel
     { libModelName :: !String
-    , version      :: !String
+    , libModelCategory :: !String
     , libModelArgs :: ![String]
     } deriving (Eq, Show)
 
@@ -49,7 +49,7 @@ instance FromJSON UserModel where
 instance FromJSON LibModel where
     parseJSON (Object v) =
         LibModel  <$> v .: "name"
-                  <*> v .: "version"
+                  <*> v .: "category"
                   <*> v .: "execArgs"
 
 instance ToJSON UserModel where
@@ -61,7 +61,7 @@ instance ToJSON UserModel where
 instance ToJSON LibModel where
     toJSON LibModel{..} = object
       [ "name"     .= libModelName
-      , "version"  .= version
+      , "category" .= libModelCategory
       , "execArgs" .= libModelArgs
       ]
 
