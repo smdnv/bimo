@@ -1,60 +1,102 @@
 #!/usr/bin/env stack
--- stack --install-ghc runghc --package turtle
+-- stack --install-ghc runghc --package shelly
 
 {-# LANGUAGE OverloadedStrings #-}
-
+{-# LANGUAGE ExtendedDefaultRules #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 import Prelude hiding (FilePath)
-import Turtle
+import Shelly
 import qualified Data.Text as T
-import Filesystem.Path.CurrentOS (encode, decode)
+import Filesystem.Path (dirname)
+import Options.Applicative
+import Data.Maybe (maybe)
+import Data.String.Interpolate
+import Data.String.Interpolate.Util
+default (T.Text)
 
-data Args = Args ![FilePath] !FilePath ![FilePath]
+data Args = Args ![T.Text] !T.Text !(Maybe [T.Text])
+
+main = shelly $ verbosely $ do
+    (Args src dst libs) <- liftIO $ execParser $ info parser idm
+    let makefile = generateMakefile src dst libs
+    maybe (return ()) buildLibs libs
+    writefile "Makefile" makefile
+    run_ "make" []
 
 parser :: Parser Args
-parser = Args <$> opt parse "src" 's' "The source files"
-              <*> optPath "dest" 'd' "The dest dir"
-              <*> opt parse "libs" 'l' "The using libs"
+parser = Args
+    <$> option (str >>= parseSep) (long "src"
+       <> short 's'
+       <> metavar "SRC FILES"
+       <> help "Source files")
+    <*> option (str >>= parseText) (long "dst"
+       <> short 'd'
+       <> metavar "DST FILE"
+       <> help "dest file")
+    <*> optional (option (str >>= parseSep) (long "libs"
+       <> short 'l'
+       <> metavar "LIBS"
+       <> help "Using libs"))
   where
-      parse src = return $ map decode $ T.splitOn ":" src
+    parseSep str = return $ T.splitOn ":" $ T.pack str
+    parseText str = return $ T.pack str
 
-main = do
-    (Args src dst libs) <- options "A simple build script" parser
-    mapM_ buildLib libs
 
-    let libPath = encode $ head libs
-        libName = encode $ dirname $ head libs
-        src' = head src
-        args = [ "-o"
-               , encode $ dst
-               , encode $ dropExtension src' <.> "c"
-               , "-I" <> libPath
-               , "-L" <> libPath
-               , "-l" <> libName
-               ]
+generateMakefile :: [T.Text] -> T.Text -> Maybe [T.Text] -> T.Text
+generateMakefile src dst Nothing =
+    T.pack $ unindent [i|
+        TARGET = #{dst}
+        SRCS = #{T.intercalate " " src}
+        OBJS = $(patsubst %.c, %.o, $(SRCS))
 
-    ec <- proc "gcc" args empty
+        all: ${TARGET}
 
-    unless (ec == ExitSuccess) $ error "gcc fail"
+        ${TARGET}: ${OBJS}
+        	gcc ${OBJS} -o ${TARGET}
+        |]
+generateMakefile src dst (Just libs) =
+    let libPaths   = map ("-L" <>) libs
+        libHeaders = map ("-I" <>) libs
+        libNames   = map ((<>) "-l" . toTextIgnore . dirname . fromText) libs
+     in T.pack $ unindent [i|
+        TARGET = #{dst}
+        SRCS = #{T.intercalate " " src}
+        OBJS = $(patsubst %.c, %.o, $(SRCS))
+        LIBS_PATH = #{T.intercalate " " libPaths}
+        LIBS_NAME = #{T.intercalate " " libNames}
+        LIBS_HEADERS = #{T.intercalate " " libHeaders}
 
-buildLib :: FilePath -> IO ()
-buildLib p = do
-    let name        = dirname p
-        libName     = decode $ "lib" <> encode name
-        srcFile     = name <.> "c"
-        fullPath    = encode $ p </> srcFile
-        fullPathObj = encode $ p </> name <.> "o"
-        fullPathLib = encode $ p </> libName <.> "a"
-        gccArgs = [ "-c"
-                  , fullPath
-                  , "-o"
-                  , fullPathObj
-                  ]
-        arArgs  = [ "rcs"
-                  , fullPathLib
-                  , fullPathObj
-                  ]
-    ec <- proc "gcc" gccArgs empty
-    unless (ec == ExitSuccess) $ error $ "gcc error, args: " ++ show gccArgs
-    ec <- proc "ar" arArgs empty
-    unless (ec == ExitSuccess) $ error $ "ar error, args: " ++ show arArgs
+        all: ${TARGET}
+
+        ${TARGET}: ${OBJS}
+        	gcc $(OBJS) -o $(TARGET) $(LIBS_PATH) $(LIBS_NAME)
+
+        .c.o:
+        	gcc -c $< -o $@ $(LIBS_HEADERS)
+        |]
+
+buildLibs :: [T.Text] -> Sh ()
+buildLibs = mapM_ (\lib -> chdir (fromText lib) (buildLib lib))
+  where
+    buildLib lib = do
+        let makefile = makefileToLib lib
+        writefile "Makefile" makefile
+        run_ "make" []
+    makefileToLib lib =
+        let name = toTextIgnore $ dirname $ fromText lib
+            libName = "lib" <> name <> ".a"
+         in T.pack $ unindent [i|
+            TARGET = #{libName}
+            SRCS = $(wildcard *.c **/*.c)
+            OBJS = $(patsubst %.c, %.o, $(SRCS))
+            all: $(TARGET)
+
+            $(TARGET): $(OBJS)
+            	ar rcs $@ $(OBJS)
+
+            .c.o:
+            	gcc -c $< -o $@
+            |]
+
 

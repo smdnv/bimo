@@ -27,7 +27,7 @@ modelsFromTopology t =
   where
     addPipes ms (prod, cons, name) =
         M.update (\m@(ModelEntity _ _ w _ _) ->
-            Just m{pipesToWrite = name : w}) prod
+            Just m{pipesToWrite = name : w}) prod $
         M.update (\m@(ModelEntity _ r _ _ _) ->
             Just m{pipesToRead = name : r}) cons
         ms
@@ -43,8 +43,8 @@ topologyToPairs :: Topology -> [(String, String, String)]
 topologyToPairs = concatMap toPairs
   where
     toPairs [] = []
-    toPairs (x1:[]) = []
-    toPairs (x1:x2:[]) = (x1, x2, x1 ++ "-" ++ x2) : []
+    toPairs [x1] = []
+    toPairs [x1, x2] = [(x1, x2, x1 ++ "-" ++ x2)]
     toPairs (x1:x2:xs) = (x1, x2, x1 ++ "-" ++ x2) : toPairs(x2 : xs)
 
 topologyToPipes :: Topology -> [String]

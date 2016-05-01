@@ -70,7 +70,7 @@ build BuildModel = do
         if exists
             then do times <- mapM getModificationTime src
                     dstTime <- getModificationTime dst
-                    return $ if dstTime > (maximum times) then False else True
+                    return $ dstTime <= maximum times
             else return True
     build' script src dst libs = do
         let libs' = map fromAbsDir libs
@@ -79,8 +79,9 @@ build BuildModel = do
                    , foldl' (++) "" $ intersperse ":" src'
                    , "-d"
                    , fromRelFile dst
-                   , "-l"
-                   , foldl' (++) "" $ intersperse ":" libs'
+                   ] ++ if null libs then [] else
+                   [ "-l"
+                   , foldl' (++) "" $ intersperse ":" (map fromAbsDir libs)
                    ]
             p = proc (fromAbsFile script) args
 

@@ -1,5 +1,6 @@
 import TestLib
 import System.Directory
+import Control.Concurrent
 
 main :: IO ()
 main = do
