@@ -1,12 +1,14 @@
+{-# LANGUAGE RecordWildCards #-}
+
 module Bimo.Types.Project where
 
 import Data.List
 import qualified Data.Map as M
+import Control.Monad.Catch
+-- import Data.Foldable
 
-topology = [ ["model1", "model2", "model3", "model4", "model5"]
-           , ["model1", "model3", "model5" ]
-           , ["model5", "model1"]
-           ]
+
+import Bimo.Types.Config.Project
 
 type Topology = [[String]]
 
@@ -39,6 +41,44 @@ modelsFromTopology t =
             let model = ModelEntity m [] [] "" []
             in M.insert m model acc
 
+fillModels :: MonadThrow m
+           => Topology
+           -> Maybe [ModelConfig]
+           -> Maybe [ModelConfig]
+           -> m [ModelEntity]
+fillModels t uModels lModels = do
+    let tModels = modelsFromTopology t
+    pModels <- case (uModels, lModels) of
+        (Nothing, Nothing) -> throwM $
+            NotFoundAnyModel $ M.foldlWithKey (\ks k _ -> k:ks) [] tModels
+        (Just uModels', Nothing) -> return $ toMap' uModels'
+        (Nothing, Just lModels') -> return $ toMap' lModels'
+        (Just uModels', Just lModels') -> return $ toMap' (uModels' ++ lModels')
+    fillModels' pModels tModels
+    --     (Just uModels', Nothing) -> fillModels' (toMap' uModels') tModels
+    --     (Nothing, Just lModels') -> fillModels' (toMap' lModels') tModels
+    --     (Just uModels', Just lModels') ->
+    --         fillModels' (toMap' (uModels' ++ lModels')) tModels
+  where
+    toMap' = foldl' func M.empty
+      where
+        func acc m@(UserModel n _) = M.insert n m acc
+        func acc m@(LibModel n _ _) = M.insert n m acc
+    fillModels' :: M.Map String ModelConfig
+                -> M.Map String ModelEntity
+                -> m [ModelEntity]
+    fillModels' pModels tModels = do
+        -- mapM find tModels
+      where
+        find pModels ModelEntity{..} = do
+            case M.lookup modelName models of
+                Nothing -> throwM $ NotFoundModelInConfig modelName
+                Just (UserModel _ execArgs) -> return ModelEntity{..}
+                Just (LibModel _ _ execArgs) -> return ModelEntity{..}
+
+
+
+
 topologyToPairs :: Topology -> [(String, String, String)]
 topologyToPairs = concatMap toPairs
   where
@@ -49,4 +89,18 @@ topologyToPairs = concatMap toPairs
 
 topologyToPipes :: Topology -> [String]
 topologyToPipes t = map (\(_, _, p) -> p) $ topologyToPairs t
+
+data ProjectException
+    = NotFoundAnyModel ![String]
+    | NotFoundModelInConfig !String
+
+instance Exception ProjectException
+
+instance Show ProjectException where
+    show (NotFoundAnyModel ms) =
+        "Not found any model in config file: " ++ show ms
+    show (NotFoundModelInConfig name) =
+        "Not found model in config: " ++ show name
+
+
 

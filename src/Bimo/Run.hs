@@ -29,6 +29,9 @@ run = do
     -- return ()
     pConf <- asks projectConfig
     p@Project{..} <- readProjectConfig pConf
+    -- let models = modelsFromTopology topology
+        -- pipes = topologyToPipes topology
+
     liftIO $ print p
     -- modelsDir <- asks projectModelsDir
 

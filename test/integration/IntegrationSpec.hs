@@ -50,6 +50,9 @@ main =
                 context "build project" $ do
                     test "build-project" testEnv
 
+            describe "Run command tests" $ do
+                test "run-project" testEnv
+
   where
     findExec s = do
         p <- findExecutable s
