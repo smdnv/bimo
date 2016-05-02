@@ -1,9 +1,9 @@
 user-models:
+- user-model-name: model1
+  exec-args: [arg1, arg2]
 - user-model-name: model2
-  exec-args: []
-- user-model-name: model2
-  exec-args: []
+  exec-args: [arg3]
 - user-model-name: model3
   exec-args: []
 topology:
-- []
+- [model1, model2, model3]

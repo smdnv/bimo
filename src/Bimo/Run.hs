@@ -17,6 +17,7 @@ import System.Process
 import System.Exit
 
 import Bimo.Types.Env
+import Bimo.Types.Project
 import Bimo.Types.Config.Project
 import Bimo.Types.Config.Model
 
@@ -26,12 +27,11 @@ import Bimo.Config
 run :: (MonadIO m, MonadThrow m, MonadLogger m, MonadReader Env m)
     => m ()
 run = do
-    -- return ()
-    pConf <- asks projectConfig
-    p@Project{..} <- readProjectConfig pConf
-    -- let models = modelsFromTopology topology
-        -- pipes = topologyToPipes topology
+    Env{..} <- ask
 
+    p <- readProjectConfig projectConfig
+    models <- fillModels p modelsDir projectModelsDir modelExec
+    liftIO $ print models
     liftIO $ print p
     -- modelsDir <- asks projectModelsDir
 

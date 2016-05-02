@@ -5,8 +5,9 @@ module Bimo.Types.Project where
 import Data.List
 import qualified Data.Map as M
 import Control.Monad.Catch
--- import Data.Foldable
-
+import Control.Monad.IO.Class
+import Path
+import Path.IO
 
 import Bimo.Types.Config.Project
 
@@ -41,42 +42,53 @@ modelsFromTopology t =
             let model = ModelEntity m [] [] "" []
             in M.insert m model acc
 
-fillModels :: MonadThrow m
-           => Topology
-           -> Maybe [ModelConfig]
-           -> Maybe [ModelConfig]
-           -> m [ModelEntity]
-fillModels t uModels lModels = do
+fillModels :: (MonadThrow m, MonadIO m)
+           => Project
+           -> Path Abs Dir
+           -> Path Rel Dir
+           -> Path Rel Dir
+           -> m (M.Map String ModelEntity)
+fillModels (Project uModels lModels t) libRoot projectRoot execDir = do
     let tModels = modelsFromTopology t
     pModels <- case (uModels, lModels) of
         (Nothing, Nothing) -> throwM $
             NotFoundAnyModel $ M.foldlWithKey (\ks k _ -> k:ks) [] tModels
-        (Just uModels', Nothing) -> return $ toMap' uModels'
-        (Nothing, Just lModels') -> return $ toMap' lModels'
-        (Just uModels', Just lModels') -> return $ toMap' (uModels' ++ lModels')
-    fillModels' pModels tModels
-    --     (Just uModels', Nothing) -> fillModels' (toMap' uModels') tModels
-    --     (Nothing, Just lModels') -> fillModels' (toMap' lModels') tModels
-    --     (Just uModels', Just lModels') ->
-    --         fillModels' (toMap' (uModels' ++ lModels')) tModels
+        (Just u, Nothing) -> return $ modelsToMap u
+        (Nothing, Just l) -> return $ modelsToMap l
+        (Just u, Just l)  -> return $ modelsToMap (u ++ l)
+
+    fillModels' pModels tModels libRoot projectRoot execDir
   where
-    toMap' = foldl' func M.empty
+    modelsToMap = foldl' func M.empty
       where
         func acc m@(UserModel n _) = M.insert n m acc
         func acc m@(LibModel n _ _) = M.insert n m acc
-    fillModels' :: M.Map String ModelConfig
-                -> M.Map String ModelEntity
-                -> m [ModelEntity]
-    fillModels' pModels tModels = do
-        -- mapM find tModels
+
+    fillModels' pModels tModels libRoot projectRoot execDir =
+        M.foldlWithKey func (return M.empty) tModels
       where
-        find pModels ModelEntity{..} = do
-            case M.lookup modelName models of
-                Nothing -> throwM $ NotFoundModelInConfig modelName
-                Just (UserModel _ execArgs) -> return ModelEntity{..}
-                Just (LibModel _ _ execArgs) -> return ModelEntity{..}
-
-
+        func acc k ModelEntity{..} = do
+            acc' <- acc
+            model <- case M.lookup k pModels of
+                Nothing -> throwM $ NotFoundModelInConfig k
+                Just (UserModel _ execArgs) -> do
+                    name <- parseRelDir k
+                    exec <- parseRelFile k
+                    path <- makeAbsolute $ projectRoot </> name
+                                                       </> execDir
+                                                       </> exec
+                    let execPath = fromAbsFile path
+                    return ModelEntity{..}
+                Just (LibModel _ c execArgs) -> do
+                    cat <- parseRelDir c
+                    name <- parseRelDir k
+                    exec <- parseRelFile k
+                    let execPath = fromAbsFile $ libRoot </> cat
+                                                         </> name
+                                                         </> execDir
+                                                         </> exec
+                    return ModelEntity{..}
+            return $ M.insert k model acc'
 
 
 topologyToPairs :: Topology -> [(String, String, String)]
