@@ -53,6 +53,9 @@ main =
             describe "Run command tests" $ do
                 test "run-project" testEnv
 
+            describe "Add command tests" $ do
+                test "add-model" testEnv
+
   where
     findExec s = do
         p <- findExecutable s

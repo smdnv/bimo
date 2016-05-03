@@ -20,6 +20,13 @@ bimo args = do
     ec <- run exec args
     unless (ec == ExitSuccess) (error "Should successfully finish, but fail")
 
+bimoStdoutContent :: [String] -> [String] -> IO ()
+bimoStdoutContent args ms = do
+    exec <- getEnv "BIMO"
+    (ec, out, err) <- readCreateProcessWithExitCode (proc exec args) ""
+    unless (ec == ExitSuccess) (error "Should successfully finish, but fail")
+    stringContents out ms
+
 bimoFail :: [String] -> IO ()
 bimoFail args = do
     exec <- getEnv "BIMO"
