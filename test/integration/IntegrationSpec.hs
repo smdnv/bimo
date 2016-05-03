@@ -55,6 +55,7 @@ main =
 
             describe "Add command tests" $ do
                 test "add-model" testEnv
+                test "add-template" testEnv
 
   where
     findExec s = do

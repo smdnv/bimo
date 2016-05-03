@@ -42,21 +42,27 @@ add AddModel = do
     let execFile = execDir </> exec
         dstDir   = mDir </> cat </> name
 
-    exists <- doesFileExist execFile
-    unless exists $ throwM $ NotFoundModelExec execFile
-
     exists <- doesDirExist dstDir
     when exists $ throwM $ ModelAlreadyExists dstDir
+
+    exists <- doesFileExist execFile
+    unless exists $ throwM $ NotFoundModelExec execFile
 
     createDirIfMissing True dstDir
     curDir <- getCurrentDir
     copyDirRecur curDir dstDir
 add AddTemplate{..} = do
-    liftIO $ print "add template"
+    tDir <- asks templatesDir
+    tempName <- parseRelDir templateName
+    let dstDir = tDir </> tempName
+
+    exists <- doesDirExist dstDir
+    when exists $ throwM $ TemplateAlreadyExists dstDir
 
 data AddException
     = NotFoundModelExec !(Path Rel File)
-   | ModelAlreadyExists !(Path Abs Dir)
+    | ModelAlreadyExists !(Path Abs Dir)
+    | TemplateAlreadyExists !(Path Abs Dir)
 
 instance Exception AddException
 
@@ -65,5 +71,7 @@ instance Show AddException where
         "Not found model exec: " ++ show path ++ " " ++ "Build model before add"
     show (ModelAlreadyExists path) =
         "Model with this name already exists in category: " ++ show path
+    show (TemplateAlreadyExists path) =
+        "Template with this name already exists: " ++ show path
 
 
