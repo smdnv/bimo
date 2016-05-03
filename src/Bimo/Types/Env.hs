@@ -21,4 +21,6 @@ data Env = Env
     , buildScriptsDir :: !(Path Abs Dir)
     , libsDir         :: !(Path Abs Dir)
     -- , templatesConfig :: !FilePath
+      -- | Temp folder to run models
+    , runDir :: !String
     }

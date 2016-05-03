@@ -20,6 +20,7 @@ library
                      , Bimo.Types.Project
                      , Bimo.Types.Config.Project
                      , Bimo.Types.Config.Model
+                     , Bimo.Project
                      , Bimo.Commands
                      , Bimo.Config
                      , Bimo.New
@@ -40,6 +41,7 @@ library
                      , path
                      , path-io
                      , filepath
+                     , unix
   default-language:    Haskell2010
 
 executable bimo

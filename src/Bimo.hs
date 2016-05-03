@@ -32,6 +32,7 @@ bimo = do
         templatesDir     = appDataDir </> $(mkRelDir "templates")
         buildScriptsDir  = appDataDir </> $(mkRelDir "buildscripts")
         libsDir          = appDataDir </> $(mkRelDir "libs")
+        runDir           = "bimo_run"
         env              = Env{..}
 
     args <- execParser parser
