@@ -21,9 +21,11 @@ import Bimo.Types.Env
 import Bimo.Types.Config.Project
 import Bimo.Types.Config.Model
 
+import Bimo.Config
+
 data NewOpts
-    = NewProject  { projectName     :: !String
-                  , srcTemplateName :: !(Maybe String)
+    = NewProject  { projectName  :: !String
+                  , templateName :: !(Maybe String)
                   }
     | NewModel    { modelName :: !String
                   , modelCat  :: !(Maybe String)
@@ -37,7 +39,15 @@ new :: (MonadIO m, MonadThrow m, MonadLogger m, MonadReader Env m)
 new NewProject{..} = do
     dir <- parseRelDir projectName
     checkExists dir
-    createEmptyProject dir
+    case templateName of
+        Nothing -> createEmptyProject dir
+        Just template -> do
+            pConf <- asks projectConfig
+            tPath <- getTemplatePath template
+            createDir dir
+            copyFile tPath $ dir </> pConf
+
+
 new NewModel{..} = do
     dir <- parseRelDir modelName
     checkExists dir
