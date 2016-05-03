@@ -26,6 +26,8 @@ library
                      , Bimo.New
                      , Bimo.Build
                      , Bimo.Run
+                     , Bimo.Add
+                     , Bimo.List
   build-depends:       base >= 4.7 && < 5
                      , optparse-applicative
                      , containers

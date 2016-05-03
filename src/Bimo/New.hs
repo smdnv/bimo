@@ -29,7 +29,6 @@ data NewOpts
                   , modelCat  :: !(Maybe String)
                   , modelLang :: !(Maybe String)
                   }
-    | NewTemplate { templateName :: !String }
     deriving Show
 
 new :: (MonadIO m, MonadThrow m, MonadLogger m, MonadReader Env m)
@@ -41,8 +40,6 @@ new NewProject{..} = do
 new NewModel{..} = do
     dir <- parseRelDir modelName
     checkExists dir (createEmptyModel modelCat modelLang)
-new NewTemplate{..} =
-    liftIO $ print templateName
 
 checkExists :: (MonadIO m, MonadThrow m, MonadLogger m, MonadReader Env m)
             => Path Rel Dir

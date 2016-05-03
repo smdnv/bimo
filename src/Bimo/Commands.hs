@@ -9,11 +9,15 @@ import Options.Applicative
 
 import Bimo.New (NewOpts(..))
 import Bimo.Build (BuildOpts(..))
+import Bimo.Add (AddOpts(..))
+import Bimo.List (ListOpts(..))
 
 data Command
     = New NewOpts
     | Build BuildOpts
     | Run
+    | Add AddOpts
+    | List ListOpts
     | Clean
     deriving Show
 
@@ -38,11 +42,10 @@ new = New <$> opts
         <*> optional (strOption (short 'l'
             <> metavar "MODEL_LANG"
             <> help "Specify model language"))
-    temp = NewTemplate
-        <$> strOption (short 't'
-            <> metavar "TEMPLATE_NAME"
-            <> help "Create new template from current project")
-    opts = project <|> model <|> temp
+    opts = project <|> model
+
+run :: Parser Command
+run = pure Run
 
 build :: Parser Command
 build = Build <$> opts
@@ -51,8 +54,23 @@ build = Build <$> opts
     model   = flag' BuildModel (short 'm' <> help "Build model")
     opts    = project <|> model
 
-run :: Parser Command
-run = pure Run
+add :: Parser Command
+add = Add <$> opts
+  where
+    model    = flag' AddModel (short 'm' <> help "Add model to models lib")
+    template = AddTemplate
+        <$> strOption (short 't'
+            <> long "template"
+            <> metavar "TEMPLATE_NAME"
+            <> help "Create template from current project")
+    opts = model <|> template
+
+list :: Parser Command
+list = List <$> opts
+  where
+    models = flag' ListModels (short 'm' <> help "List all lib models")
+    templates = flag' ListTemplates (short 't' <> help "List all templates")
+    opts = models <|> templates
 
 clean :: Parser Command
 clean = pure Clean
@@ -64,5 +82,7 @@ parser = info (helper <*> p) idm
          ( command "new" (info (helper <*> new) (progDesc "Create new project"))
         <> command "build" (info (helper <*> build) (progDesc "Build project"))
         <> command "run" (info (helper <*> run) (progDesc "Run project"))
+        <> command "add" (info (helper <*> add) (progDesc "Add model or template"))
+        <> command "list" (info (helper <*> list) (progDesc "List models or templates"))
         <> command "clean" (info (helper <*> clean) (progDesc "Clean project"))
          )

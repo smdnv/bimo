@@ -1,0 +1,12 @@
+name: simple-model
+category: channel
+version: '0.0.1'
+descr: model description there
+language: c
+source:
+- main.c
+- libs/user_lib.c
+- libs/extralib/extra_lib.c
+libs:
+- example_lib1
+- example_lib2

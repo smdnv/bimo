@@ -48,7 +48,6 @@ build BuildProject = do
             let dir = root </> name
             withCurrentDir dir $ build BuildModel) models
 
-
 build BuildModel = do
     mConf       <- asks modelConfig
     Model{..}   <- readModelConfig mConf
