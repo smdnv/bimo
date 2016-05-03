@@ -59,15 +59,17 @@ fillModels (Project uModels lModels t) = do
                                                        </> execDir
                                                        </> exec
                     let execPath = fromAbsFile path
+                    exists <- doesFileExist path
+                    unless exists $ throwM $ NotFoundModelExec path
                     return ModelEntity{..}
                 Just (LibModel _ c execArgs) -> do
                     cat <- parseRelDir c
                     name <- parseRelDir k
                     exec <- parseRelFile k
-                    let execPath = fromAbsFile $ libRoot </> cat
-                                                         </> name
-                                                         </> execDir
-                                                         </> exec
+                    let path = libRoot </> cat </> name </> execDir </> exec
+                        execPath = fromAbsFile path
+                    exists <- doesFileExist path
+                    unless exists $ throwM $ NotFoundModelExec path
                     return ModelEntity{..}
             return $ M.insert k model acc'
 
@@ -75,6 +77,7 @@ fillModels (Project uModels lModels t) = do
 data ProjectException
     = NotFoundAnyModel ![String]
     | NotFoundModelInConfig !String
+    | NotFoundModelExec !(Path Abs File)
 
 instance Exception ProjectException
 
@@ -83,6 +86,8 @@ instance Show ProjectException where
         "Not found any model in config file: " ++ show ms
     show (NotFoundModelInConfig name) =
         "Not found model in config: " ++ show name
+    show (NotFoundModelExec path) =
+        "Not found model exec: " ++ show path
 
 
 
