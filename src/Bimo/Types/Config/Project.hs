@@ -63,10 +63,14 @@ instance ToJSON ModelConfig where
 
 emptyProjectConfig :: B.ByteString
 emptyProjectConfig =
+    let p = Project (Just []) (Just []) [[]]
+     in encodeProjectConfig p
+
+encodeProjectConfig :: Project -> B.ByteString
+encodeProjectConfig p =
     let o = keyOrder [ "user-models"
                      , "lib-models"
                      , "topology"
                      ]
         c = setConfCompare o defConfig
-        p = Project (Just []) (Just []) [[]]
      in encodePretty c p

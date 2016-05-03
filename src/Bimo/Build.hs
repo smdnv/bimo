@@ -35,12 +35,11 @@ build :: (MonadIO m, MonadThrow m, MonadMask m, MonadLogger m, MonadReader Env m
       -> m ()
 build BuildProject = do
     pConf <- asks projectConfig
-    p@Project{..} <- readProjectConfig pConf
+    curDir <- getCurrentDir
+    p@Project{..} <- readProjectConfig $ curDir </> pConf
     modelsDir <- asks projectModelsDir
 
     maybe (return ()) (buildModels modelsDir) userModels
-
-    liftIO $ print p
   where
     buildModels root models =
         mapM_ (\(UserModel n _) -> do
@@ -50,7 +49,8 @@ build BuildProject = do
 
 build BuildModel = do
     mConf       <- asks modelConfig
-    Model{..}   <- readModelConfig mConf
+    curDir      <- getCurrentDir
+    Model{..}   <- readModelConfig $ curDir </> mConf
 
     name        <- parseRelFile modelName
     execDir     <- asks modelExec

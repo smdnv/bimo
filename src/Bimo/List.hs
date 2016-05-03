@@ -42,5 +42,10 @@ list ListModels = do
         mapM_ (\m -> putStrLn $ "  - " ++ show m) $ fst files
 
 list ListTemplates = do
-    liftIO $ print "list templates"
+    tempDir <- asks templatesDir
+    files <- listDir tempDir
+    let ts = fst files
+
+    liftIO $ mapM_ print ts
+
 

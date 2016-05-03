@@ -33,7 +33,8 @@ run :: (MonadIO m, MonadThrow m, MonadMask m, MonadLogger m, MonadReader Env m)
 run = do
     pConf  <- asks projectConfig
     rDir   <- asks runDir
-    p      <- readProjectConfig pConf
+    curDir <- getCurrentDir
+    p      <- readProjectConfig $ curDir </> pConf
     models <- fillModels p
 
     withSystemTempDir rDir (\tmpDir -> do

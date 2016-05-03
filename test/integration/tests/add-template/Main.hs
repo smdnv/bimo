@@ -6,7 +6,7 @@ main = do
     -- Fail add
     bimoFailAndStderrContent ["add", "-t", "new-template"]
                              [ "Not found model exec"
-                             , "Build project before add"
+                             , "Build model before add"
                              ]
 
     -- Successful add template
@@ -16,5 +16,5 @@ main = do
 
     -- Fail when template already exists
     bimoFailAndStderrContent ["add", "-t", "new-template"]
-                             ["Template already exists"]
+                             ["Template with this name already exists"]
 

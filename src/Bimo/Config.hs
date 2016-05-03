@@ -17,7 +17,7 @@ import Bimo.Types.Config.Model
 
 
 readModelConfig :: (MonadIO m, MonadThrow m, MonadLogger m)
-                => Path Rel File
+                => Path Abs File
                 -> m Model
 readModelConfig p = do
     exists <- doesFileExist p
@@ -25,7 +25,7 @@ readModelConfig p = do
     readYamlConfig p
 
 readProjectConfig :: (MonadIO m, MonadThrow m, MonadLogger m)
-                  => Path Rel File
+                  => Path Abs File
                   -> m Project
 readProjectConfig p = do
     exists <- doesFileExist p
@@ -33,10 +33,10 @@ readProjectConfig p = do
     readYamlConfig p
 
 readYamlConfig :: (MonadIO m, MonadThrow m, MonadLogger m, FromJSON a)
-               => Path Rel File
+               => Path Abs File
                -> m a
 readYamlConfig p = do
-    let file = fromRelFile p
+    let file = fromAbsFile p
     decoded <- liftIO $ decodeFileEither file
     case decoded of
         Left e -> throwM e
@@ -73,8 +73,8 @@ getLibPaths lang libs = do
         return path
 
 data ReadAppEnvException
-    = NotFoundModelConfig !(Path Rel File)
-    | NotFoundProjectConfig !(Path Rel File)
+    = NotFoundModelConfig !(Path Abs File)
+    | NotFoundProjectConfig !(Path Abs File)
     | NotFoundBuildScript !(Path Rel File)
     | LibraryDoesNotExist !(Path Abs Dir)
 
