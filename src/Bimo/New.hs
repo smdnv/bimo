@@ -37,7 +37,7 @@ new :: (MonadIO m, MonadThrow m, MonadLogger m, MonadReader Env m)
 new NewProject{..} = do
     dir <- parseRelDir projectName
     checkExists dir
-    createEmptyProject die
+    createEmptyProject dir
 new NewModel{..} = do
     dir <- parseRelDir modelName
     checkExists dir
@@ -46,7 +46,7 @@ new NewModel{..} = do
 checkExists :: (MonadIO m, MonadThrow m, MonadLogger m, MonadReader Env m)
             => Path Rel Dir
             -> m ()
-checkExists dir action = do
+checkExists dir = do
     exists <- doesDirExist dir
     when exists $ throwM $ AlreadyExists dir
 

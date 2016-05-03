@@ -29,7 +29,7 @@ new = New <$> opts
         <$> strOption (short 'p'
             <> metavar "PROJECT_NAME"
             <> help "Create new Project")
-        <*> optional (strOption (short 's'
+        <*> optional (strOption (short 't'
             <> metavar "SOURCE_TEMPLATE"
             <> help "Source template"))
     model = NewModel

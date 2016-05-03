@@ -39,8 +39,9 @@ main =
 
         hspec $ do
             describe "New command tests" $ do
-                test "create-empty-project" testEnv
-                test "create-empty-model" testEnv
+                test "new-empty-project" testEnv
+                test "new-empty-model" testEnv
+                test "new-project-from-template" testEnv
 
             describe "Build command tests" $ do
                 context "build model" $ do

@@ -1,0 +1,10 @@
+name: model1
+category: none
+version: '0.0.1'
+descr: model description there
+language: c
+source:
+- main.c
+libs:
+- example_lib1
+- example_lib2

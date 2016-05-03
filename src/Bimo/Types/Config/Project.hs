@@ -63,7 +63,7 @@ instance ToJSON ModelConfig where
 
 emptyProjectConfig :: B.ByteString
 emptyProjectConfig =
-    let p = Project (Just []) (Just []) [[]]
+    let p = Project Nothing Nothing [[]]
      in encodeProjectConfig p
 
 encodeProjectConfig :: Project -> B.ByteString
