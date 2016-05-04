@@ -2,15 +2,16 @@
 
 module Bimo.Commands
     ( parser
-    , Command (..))
+    , Command (..)
+    )
     where
 
 import Options.Applicative
 
-import Bimo.New (NewOpts(..))
-import Bimo.Build (BuildOpts(..))
-import Bimo.Add (AddOpts(..))
-import Bimo.List (ListOpts(..))
+import Bimo.Commands.New (NewOpts(..))
+import Bimo.Commands.Build (BuildOpts(..))
+import Bimo.Commands.Add (AddOpts(..))
+import Bimo.Commands.List (ListOpts(..))
 
 data Command
     = New NewOpts
@@ -79,7 +80,7 @@ parser :: ParserInfo Command
 parser = info (helper <*> p) idm
   where
     p = subparser
-         ( command "new" (info (helper <*> new) (progDesc "Create new project"))
+         ( command "new" (info (helper <*> new) (progDesc "Create new project or model"))
         <> command "build" (info (helper <*> build) (progDesc "Build project"))
         <> command "run" (info (helper <*> run) (progDesc "Run project"))
         <> command "add" (info (helper <*> add) (progDesc "Add model or template"))

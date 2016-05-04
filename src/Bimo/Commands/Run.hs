@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Build model or project
 
-module Bimo.Run
+module Bimo.Commands.Run
     ( run
     ) where
 
@@ -50,10 +50,7 @@ run = do
         )
   where
       createPipes pipes = liftIO $ mapM_ (`createNamedPipe` namedPipeMode) pipes
-      processExitCodes (k, ec)  = do
-          unless (ec == ExitSuccess) (error "model fails")
-
-
+      processExitCodes (k, ec)  = unless (ec == ExitSuccess) (error "model fails")
 
 modelsToProcs :: FilePath
               -> M.Map String ModelEntity

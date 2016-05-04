@@ -3,7 +3,7 @@
 
 -- | Create new project
 
-module Bimo.New
+module Bimo.Commands.New
     ( NewOpts (..)
     , new
     ) where
@@ -46,7 +46,6 @@ new NewProject{..} = do
             tPath <- getTemplatePath template
             createDir dir
             copyFile tPath $ dir </> pConf
-
 
 new NewModel{..} = do
     dir <- parseRelDir modelName

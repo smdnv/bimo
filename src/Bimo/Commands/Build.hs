@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Build model or project
 
-module Bimo.Build
+module Bimo.Commands.Build
     ( BuildOpts (..)
     , build
     ) where

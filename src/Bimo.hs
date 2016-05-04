@@ -13,11 +13,11 @@ import System.Environment
 
 import Bimo.Types.Env
 import Bimo.Commands
-import Bimo.New
-import Bimo.Build
-import Bimo.Run
-import Bimo.Add
-import Bimo.List
+import Bimo.Commands.New
+import Bimo.Commands.Build
+import Bimo.Commands.Run
+import Bimo.Commands.Add
+import Bimo.Commands.List
 
 bimo :: IO ()
 bimo = do

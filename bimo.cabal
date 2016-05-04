@@ -20,14 +20,14 @@ library
                      , Bimo.Types.Project
                      , Bimo.Types.Config.Project
                      , Bimo.Types.Config.Model
-                     , Bimo.Project
                      , Bimo.Commands
+                     , Bimo.Commands.New
+                     , Bimo.Commands.Build
+                     , Bimo.Commands.Run
+                     , Bimo.Commands.Add
+                     , Bimo.Commands.List
+                     , Bimo.Project
                      , Bimo.Config
-                     , Bimo.New
-                     , Bimo.Build
-                     , Bimo.Run
-                     , Bimo.Add
-                     , Bimo.List
   build-depends:       base >= 4.7 && < 5
                      , optparse-applicative
                      , containers

@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Add model and template
 
-module Bimo.List
+module Bimo.Commands.List
     ( ListOpts(..)
     , list
     ) where
