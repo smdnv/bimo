@@ -25,6 +25,7 @@ import Bimo.Types.Project
 import Bimo.Types.Config.Project
 import Bimo.Types.Config.Model
 
+import Bimo.Model
 import Bimo.Config
 import Bimo.Project
 

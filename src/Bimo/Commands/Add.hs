@@ -21,7 +21,8 @@ import Bimo.Types.Env
 import Bimo.Types.Config.Model
 import Bimo.Types.Config.Project
 
-import Bimo.Config
+import Bimo.Project
+import Bimo.Model
 
 data AddOpts
     = AddModel
@@ -101,14 +102,6 @@ checkModelPaths dir exec = do
 
     exists <- doesFileExist exec
     unless exists $ throwM $ NotFoundModelExec exec
-
-copyModel :: (MonadIO m, MonadThrow m, MonadCatch m, MonadLogger m, MonadReader Env m)
-          => Path Abs Dir
-          -> Path Abs Dir
-          -> m ()
-copyModel src dst = do
-    createDirIfMissing True dst
-    copyDirRecur src dst
 
 
 data AddException

@@ -24,6 +24,8 @@ import Bimo.Types.Config.Project
 import Bimo.Types.Config.Model
 
 import Bimo.Config
+import Bimo.Project
+import Bimo.Model
 
 data BuildOpts
     = BuildProject

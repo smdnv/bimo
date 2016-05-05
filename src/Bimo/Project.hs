@@ -1,12 +1,15 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE FlexibleContexts #-}
--- | Process models before run
 
 module Bimo.Project
-    ( fillModels
+    ( readProjectConfig
+    , createEmptyProject
+    , fillModels
     ) where
 
+import Data.Yaml
 import qualified Data.Map as M
+import qualified Data.ByteString as B
 import Data.List
 import Control.Monad
 import Control.Monad.Reader
@@ -21,6 +24,24 @@ import Bimo.Types.Project
 import Bimo.Types.Config.Project
 import Bimo.Types.Config.Model
 
+import Bimo.Config
+
+readProjectConfig :: (MonadIO m, MonadThrow m, MonadLogger m)
+                  => Path Abs File
+                  -> m Project
+readProjectConfig p = do
+    exists <- doesFileExist p
+    unless exists $ throwM $ NotFoundProjectConfig p
+    readYamlConfig p
+
+createEmptyProject :: (MonadIO m, MonadThrow m, MonadLogger m, MonadReader Env m)
+                   => Path Rel Dir
+                   -> m ()
+createEmptyProject dir = do
+    Env{..} <- ask
+    createDir dir
+    createDir $ dir </> projectModelsDir
+    liftIO $ B.writeFile (toFilePath $ dir </> projectConfig) emptyProjectConfig
 
 fillModels :: (MonadIO m, MonadThrow m, MonadLogger m, MonadReader Env m)
            => Project
@@ -75,13 +96,16 @@ fillModels (Project uModels lModels t) = do
 
 
 data ProjectException
-    = NotFoundAnyModel ![String]
+    = NotFoundProjectConfig !(Path Abs File)
+    | NotFoundAnyModel ![String]
     | NotFoundModelInConfig !String
     | NotFoundModelExec !(Path Abs File)
 
 instance Exception ProjectException
 
 instance Show ProjectException where
+    show (NotFoundProjectConfig path) =
+        "Not found project config: " ++ show path
     show (NotFoundAnyModel ms) =
         "Not found any model in config file: " ++ show ms
     show (NotFoundModelInConfig name) =

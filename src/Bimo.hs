@@ -17,6 +17,7 @@ import Bimo.Commands.New
 import Bimo.Commands.Build
 import Bimo.Commands.Run
 import Bimo.Commands.Add
+import Bimo.Commands.Unpack
 import Bimo.Commands.List
 
 bimo :: IO ()
@@ -43,6 +44,7 @@ bimo = do
         Build opts -> runStdoutLoggingT $ runReaderT (build opts) env
         Run -> runStdoutLoggingT $ runReaderT run env
         Add opts -> runStdoutLoggingT $ runReaderT (add opts) env
+        Unpack opts -> runStdoutLoggingT $ runReaderT (unpack opts) env
         List opts -> runStdoutLoggingT $ runReaderT (list opts) env
         _ -> print args
 

@@ -8,16 +8,18 @@ module Bimo.Commands
 
 import Options.Applicative
 
-import Bimo.Commands.New (NewOpts(..))
-import Bimo.Commands.Build (BuildOpts(..))
-import Bimo.Commands.Add (AddOpts(..))
-import Bimo.Commands.List (ListOpts(..))
+import Bimo.Commands.New     (NewOpts(..))
+import Bimo.Commands.Build   (BuildOpts(..))
+import Bimo.Commands.Add     (AddOpts(..))
+import Bimo.Commands.Unpack  (UnpackOpts(..))
+import Bimo.Commands.List    (ListOpts(..))
 
 data Command
     = New NewOpts
     | Build BuildOpts
     | Run
     | Add AddOpts
+    | Unpack UnpackOpts
     | List ListOpts
     | Clean
     deriving Show
@@ -66,6 +68,19 @@ add = Add <$> opts
             <> help "Create template from current project")
     opts = model <|> template
 
+unpack :: Parser Command
+unpack = Unpack <$> opts
+  where
+    opts = UnpackOpts
+        <$> strOption (short 'c'
+            <> long "category"
+            <> metavar "CATEGORY"
+            <> help "Model category")
+        <*> strOption (short 'n'
+            <> long "name"
+            <> metavar "MODEL_NAME"
+            <> help "Model name")
+
 list :: Parser Command
 list = List <$> opts
   where
@@ -84,6 +99,7 @@ parser = info (helper <*> p) idm
         <> command "build" (info (helper <*> build) (progDesc "Build project"))
         <> command "run" (info (helper <*> run) (progDesc "Run project"))
         <> command "add" (info (helper <*> add) (progDesc "Add model or template"))
+        <> command "unpack" (info (helper <*> unpack) (progDesc "Unpack model"))
         <> command "list" (info (helper <*> list) (progDesc "List models or templates"))
         <> command "clean" (info (helper <*> clean) (progDesc "Clean project"))
          )

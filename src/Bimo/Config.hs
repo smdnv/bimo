@@ -16,22 +16,6 @@ import Bimo.Types.Config.Project
 import Bimo.Types.Config.Model
 
 
-readModelConfig :: (MonadIO m, MonadThrow m, MonadLogger m)
-                => Path Abs File
-                -> m Model
-readModelConfig p = do
-    exists <- doesFileExist p
-    unless exists $ throwM $ NotFoundModelConfig p
-    readYamlConfig p
-
-readProjectConfig :: (MonadIO m, MonadThrow m, MonadLogger m)
-                  => Path Abs File
-                  -> m Project
-readProjectConfig p = do
-    exists <- doesFileExist p
-    unless exists $ throwM $ NotFoundProjectConfig p
-    readYamlConfig p
-
 readYamlConfig :: (MonadIO m, MonadThrow m, MonadLogger m, FromJSON a)
                => Path Abs File
                -> m a
@@ -87,20 +71,13 @@ getTemplatePath temp = do
 
 
 data ReadAppEnvException
-    = NotFoundModelConfig !(Path Abs File)
-    | NotFoundProjectConfig !(Path Abs File)
-    | NotFoundBuildScript !(Path Rel File)
+    = NotFoundBuildScript !(Path Rel File)
     | LibraryDoesNotExist !(Path Abs Dir)
     | NotFoundTemplate !(Path Abs File)
 
 instance Exception ReadAppEnvException
 
-
 instance Show ReadAppEnvException where
-    show (NotFoundModelConfig path) =
-        "Not found model config: " ++ show path
-    show (NotFoundProjectConfig path) =
-        "Not found project config: " ++ show path
     show (NotFoundBuildScript path) =
         "Not found build script: " ++ show path
     show (LibraryDoesNotExist path) =

@@ -14,14 +14,13 @@ import Control.Monad.Catch
 import Control.Monad.IO.Class
 import Path
 import Path.IO
-import System.FilePath (dropTrailingPathSeparator)
-import qualified Data.ByteString as B
 
 import Bimo.Types.Env
 import Bimo.Types.Config.Project
-import Bimo.Types.Config.Model
 
 import Bimo.Config
+import Bimo.Model
+import Bimo.Project
 
 data NewOpts
     = NewProject  { projectName  :: !String
@@ -57,36 +56,16 @@ checkExists :: (MonadIO m, MonadThrow m, MonadLogger m, MonadReader Env m)
             -> m ()
 checkExists dir = do
     exists <- doesDirExist dir
-    when exists $ throwM $ AlreadyExists dir
-
-createEmptyProject :: (MonadIO m, MonadThrow m, MonadLogger m, MonadReader Env m)
-                   => Path Rel Dir
-                   -> m ()
-createEmptyProject dir = do
-    Env{..} <- ask
-    createDir dir
-    createDir $ dir </> projectModelsDir
-    liftIO $ B.writeFile (toFilePath $ dir </> projectConfig) emptyProjectConfig
-
-createEmptyModel :: (MonadIO m, MonadThrow m, MonadLogger m, MonadReader Env m)
-                 => Maybe String
-                 -> Maybe String
-                 -> Path Rel Dir
-                 -> m ()
-createEmptyModel cat lang modelDir = do
-    Env{..} <- ask
-    createDir modelDir
-    createDir $ modelDir </> modelSrc
-    createDir $ modelDir </> modelExec
-    let name = dropTrailingPathSeparator $ toFilePath modelDir
-        conf = emptyModelConfig name cat lang
-    liftIO $ B.writeFile (toFilePath $ modelDir </> modelConfig) conf
+    when exists $ throwM $ DirAlreadyExists dir
 
 
 data NewException
-    = AlreadyExists !(Path Rel Dir)
-    deriving (Show)
+    = DirAlreadyExists !(Path Rel Dir)
 
 instance Exception NewException
+
+instance Show NewException where
+    show (DirAlreadyExists path) =
+        "Directory already exists: " ++ show path
 
 

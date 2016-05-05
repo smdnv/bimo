@@ -25,7 +25,9 @@ library
                      , Bimo.Commands.Build
                      , Bimo.Commands.Run
                      , Bimo.Commands.Add
+                     , Bimo.Commands.Unpack
                      , Bimo.Commands.List
+                     , Bimo.Model
                      , Bimo.Project
                      , Bimo.Config
   build-depends:       base >= 4.7 && < 5
