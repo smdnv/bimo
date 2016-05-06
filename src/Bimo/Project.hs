@@ -3,7 +3,11 @@
 
 module Bimo.Project
     ( readProjectConfig
+    , writeProjectConfig
+    , createProjectDirs
     , createEmptyProject
+    , copyProjectConfig
+    , unpackProject
     , fillModels
     ) where
 
@@ -25,8 +29,9 @@ import Bimo.Types.Config.Project
 import Bimo.Types.Config.Model
 
 import Bimo.Config
+import Bimo.Model
 
-readProjectConfig :: (MonadIO m, MonadThrow m, MonadLogger m)
+readProjectConfig :: (MonadIO m, MonadThrow m)
                   => Path Abs File
                   -> m Project
 readProjectConfig p = do
@@ -34,16 +39,82 @@ readProjectConfig p = do
     unless exists $ throwM $ NotFoundProjectConfig p
     readYamlConfig p
 
-createEmptyProject :: (MonadIO m, MonadThrow m, MonadLogger m, MonadReader Env m)
-                   => Path Rel Dir
+writeProjectConfig :: (MonadIO m, MonadThrow m, MonadReader Env m)
+                   => Path Abs File
+                   -> Project
                    -> m ()
-createEmptyProject dir = do
-    Env{..} <- ask
-    createDir dir
-    createDir $ dir </> projectModelsDir
-    liftIO $ B.writeFile (toFilePath $ dir </> projectConfig) emptyProjectConfig
+writeProjectConfig path conf = do
+    let b = encodeProjectConfig conf
+    liftIO $ B.writeFile (toFilePath path) b
 
-fillModels :: (MonadIO m, MonadThrow m, MonadLogger m, MonadReader Env m)
+createProjectDirs :: (MonadIO m, MonadThrow m, MonadReader Env m)
+                  => Path Abs Dir
+                  -> m ()
+createProjectDirs root = do
+    mDir <- asks projectModelsDir
+    createDir root
+    createDir $ root </> mDir
+
+createEmptyProject :: (MonadIO m, MonadThrow m, MonadReader Env m)
+                   => Path Abs Dir
+                   -> m ()
+createEmptyProject root = do
+    pConf <- asks projectConfig
+    createProjectDirs root
+    writeProjectConfig (root </> pConf) emptyProjectConfig
+
+getTemplatePath :: (MonadIO m, MonadThrow m, MonadReader Env m)
+                => String
+                -> m (Path Abs File)
+getTemplatePath temp = do
+    tDir <- asks templatesDir
+    pConf <- asks projectConfig
+    template <- parseRelDir temp
+    let path = tDir </> template </> pConf
+
+    exists <- doesFileExist path
+    unless exists $ throwM $ NotFoundTemplate path
+    return path
+
+copyProjectConfig :: (MonadIO m, MonadThrow m, MonadReader Env m)
+                  => String
+                  -> Path Abs Dir
+                  -> m ()
+copyProjectConfig temp root = do
+    pConf <- asks projectConfig
+    srcPath <- getTemplatePath temp
+    copyFile srcPath $ root </> pConf
+
+unpackProject :: (MonadIO m, MonadThrow m, MonadCatch m, MonadReader Env m)
+              => String
+              -> Path Abs Dir
+              -> m ()
+unpackProject temp root = do
+    pConf <- asks projectConfig
+    mLibDir <- asks modelsDir
+    mPrjDir <- asks projectModelsDir
+    tempPath <- getTemplatePath temp
+    let dstDir = root </> mPrjDir
+
+    Project{..} <- readProjectConfig tempPath
+    case libModels of
+        Nothing -> throwM $ NotFoundLibModels tempPath
+        Just ms -> do
+            (models, srcDst) <- mapAndUnzipM (process mLibDir dstDir) ms
+            let prj = Project (Just models) Nothing topology
+
+            mapM_ (uncurry copyModel) srcDst
+
+            writeProjectConfig (root </> pConf) prj
+  where
+    process srcRoot dstRoot m@(LibModel name cat _) = do
+        let uModel = toUserModel m
+
+        name' <- parseRelDir name
+        cat' <- parseRelDir cat
+        return (uModel, (srcRoot </> cat' </> name', dstRoot </> name'))
+
+fillModels :: (MonadIO m, MonadThrow m, MonadReader Env m)
            => Project
            -> m (M.Map String ModelEntity)
 fillModels (Project uModels lModels t) = do
@@ -97,21 +168,27 @@ fillModels (Project uModels lModels t) = do
 
 data ProjectException
     = NotFoundProjectConfig !(Path Abs File)
+    | NotFoundTemplate !(Path Abs File)
     | NotFoundAnyModel ![String]
     | NotFoundModelInConfig !String
     | NotFoundModelExec !(Path Abs File)
+    | NotFoundLibModels !(Path Abs File)
 
 instance Exception ProjectException
 
 instance Show ProjectException where
     show (NotFoundProjectConfig path) =
         "Not found project config: " ++ show path
+    show (NotFoundTemplate path) =
+        "Not found template: " ++ show path
     show (NotFoundAnyModel ms) =
         "Not found any model in config file: " ++ show ms
     show (NotFoundModelInConfig name) =
         "Not found model in config: " ++ show name
     show (NotFoundModelExec path) =
         "Not found model exec: " ++ show path
+    show (NotFoundLibModels path) =
+        "Not found any lib model in config: " ++ show path
 
 
 

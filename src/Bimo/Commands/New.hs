@@ -25,6 +25,7 @@ import Bimo.Project
 data NewOpts
     = NewProject  { projectName  :: !String
                   , templateName :: !(Maybe String)
+                  , unpackFlag   :: !Bool
                   }
     | NewModel    { modelName :: !String
                   , modelCat  :: !(Maybe String)
@@ -32,30 +33,33 @@ data NewOpts
                   }
     deriving Show
 
-new :: (MonadIO m, MonadThrow m, MonadLogger m, MonadReader Env m)
+new :: (MonadIO m, MonadThrow m, MonadCatch m, MonadLogger m, MonadReader Env m)
     => NewOpts
     -> m ()
 new NewProject{..} = do
     dir <- parseRelDir projectName
-    checkExists dir
-    case templateName of
-        Nothing -> createEmptyProject dir
-        Just template -> do
-            pConf <- asks projectConfig
-            mDir <- asks projectModelsDir
-            tPath <- getTemplatePath template
+    curDir <- getCurrentDir
+    let root = curDir </> dir
 
-            createDir dir
-            createDir $ dir </> mDir
-            copyFile tPath $ dir </> pConf
+    checkExists root
+    case (templateName, unpackFlag) of
+        (Nothing, False) -> createEmptyProject root
+        (Nothing, True) -> throwM NotProvidedTemplate
+        (Just t, False) -> do
+            createProjectDirs root
+            copyProjectConfig t root
+        (Just t, True) -> do
+            createProjectDirs root
+            unpackProject t root
 
 new NewModel{..} = do
     dir <- parseRelDir modelName
-    checkExists dir
+    curDir <- getCurrentDir
+    checkExists $ curDir </> dir
     createEmptyModel modelCat modelLang dir
 
 checkExists :: (MonadIO m, MonadThrow m, MonadLogger m, MonadReader Env m)
-            => Path Rel Dir
+            => Path Abs Dir
             -> m ()
 checkExists dir = do
     exists <- doesDirExist dir
@@ -63,12 +67,15 @@ checkExists dir = do
 
 
 data NewException
-    = DirAlreadyExists !(Path Rel Dir)
+    = DirAlreadyExists !(Path Abs Dir)
+    | NotProvidedTemplate
 
 instance Exception NewException
 
 instance Show NewException where
     show (DirAlreadyExists path) =
         "Directory already exists: " ++ show path
+    show NotProvidedTemplate =
+        "Not provided template to unpack"
 
 

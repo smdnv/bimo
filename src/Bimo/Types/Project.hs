@@ -47,3 +47,10 @@ topologyToPairs = concatMap toPairs
 
 topologyToPipes :: Topology -> [String]
 topologyToPipes t = map (\(_, _, p) -> p) $ topologyToPairs t
+
+
+toLibModel :: String -> ModelConfig -> ModelConfig
+toLibModel category (UserModel name args) = LibModel name category args
+
+toUserModel :: ModelConfig -> ModelConfig
+toUserModel (LibModel name _ args) = UserModel name args

@@ -19,7 +19,7 @@ import Bimo.Types.Config.Model
 
 import Bimo.Config
 
-readModelConfig :: (MonadIO m, MonadThrow m, MonadLogger m)
+readModelConfig :: (MonadIO m, MonadThrow m)
                 => Path Abs File
                 -> m Model
 readModelConfig p = do
@@ -27,7 +27,7 @@ readModelConfig p = do
     unless exists $ throwM $ NotFoundModelConfig p
     readYamlConfig p
 
-createEmptyModel :: (MonadIO m, MonadThrow m, MonadLogger m, MonadReader Env m)
+createEmptyModel :: (MonadIO m, MonadThrow m, MonadReader Env m)
                  => Maybe String
                  -> Maybe String
                  -> Path Rel Dir
@@ -41,7 +41,7 @@ createEmptyModel cat lang modelDir = do
         conf = emptyModelConfig name cat lang
     liftIO $ B.writeFile (toFilePath $ modelDir </> modelConfig) conf
 
-copyModel :: (MonadIO m, MonadThrow m, MonadCatch m, MonadLogger m, MonadReader Env m)
+copyModel :: (MonadIO m, MonadThrow m, MonadCatch m, MonadReader Env m)
           => Path Abs Dir
           -> Path Abs Dir
           -> m ()

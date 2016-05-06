@@ -18,6 +18,7 @@ import Path.IO
 import qualified Data.ByteString as B
 
 import Bimo.Types.Env
+import Bimo.Types.Project
 import Bimo.Types.Config.Model
 import Bimo.Types.Config.Project
 
@@ -66,14 +67,12 @@ add AddTemplate{..} = do
                     zipWith (\(_, _, cat) m -> (cat, m)) modelsInfo ms
 
                 libModels' = Just $ maybe lModels' (++ lModels') libModels
-                p = encodeProjectConfig $ Project Nothing libModels' topology
+                prj = Project Nothing libModels' topology
 
             mapM_ (uncurry copyModel) $
                     zipWith (\src (dst, _, _) -> (src, dst)) modelsDirs modelsInfo
             createDirIfMissing True dstDir
-            liftIO $ B.writeFile (toFilePath $ dstDir </> pConf) p
-  where
-    toLibModel category (UserModel name args) = LibModel name category args
+            writeProjectConfig (dstDir </> pConf) prj
 
 getModelInfo :: (MonadIO m, MonadThrow m, MonadLogger m, MonadReader Env m)
               => Path Abs Dir

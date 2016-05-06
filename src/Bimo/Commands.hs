@@ -35,6 +35,9 @@ new = New <$> opts
         <*> optional (strOption (short 't'
             <> metavar "SOURCE_TEMPLATE"
             <> help "Source template"))
+        <*> switch (short 'u'
+            <> long "unpack"
+            <> help "Unpack models from template")
     model = NewModel
         <$> strOption (short 'm'
             <> metavar "MODEL_NAME"

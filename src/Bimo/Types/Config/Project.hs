@@ -61,10 +61,8 @@ instance ToJSON ModelConfig where
       , "exec-args"      .= libModelArgs
       ]
 
-emptyProjectConfig :: B.ByteString
-emptyProjectConfig =
-    let p = Project Nothing Nothing [[]]
-     in encodeProjectConfig p
+emptyProjectConfig :: Project
+emptyProjectConfig = Project Nothing Nothing [[]]
 
 encodeProjectConfig :: Project -> B.ByteString
 encodeProjectConfig p =
