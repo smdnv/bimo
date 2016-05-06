@@ -30,6 +30,7 @@ library
                      , Bimo.Model
                      , Bimo.Project
                      , Bimo.Config
+                     , Bimo.Path
   build-depends:       base >= 4.7 && < 5
                      , optparse-applicative
                      , containers

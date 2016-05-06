@@ -21,6 +21,7 @@ import Bimo.Types.Config.Project
 import Bimo.Config
 import Bimo.Model
 import Bimo.Project
+import Bimo.Path
 
 data NewOpts
     = NewProject  { projectName  :: !String
@@ -36,35 +37,30 @@ data NewOpts
 new :: (MonadIO m, MonadThrow m, MonadCatch m, MonadLogger m, MonadReader Env m)
     => NewOpts
     -> m ()
-new NewProject{..} = do
-    dir <- parseRelDir projectName
+new NewModel{..} =
+    withDir modelName $ \root -> createEmptyModel modelCat modelLang root
+new NewProject{..} =
+    withDir projectName $ \root ->
+        case (templateName, unpackFlag) of
+            (Nothing, False) -> createEmptyProject root
+            (Nothing, True) -> throwM NotProvidedTemplate
+            (Just t, False) -> do
+                createProjectDirs root
+                copyProjectConfig t root
+            (Just t, True) -> do
+                createProjectDirs root
+                unpackProject t root
+
+withDir :: (MonadIO m, MonadThrow m, MonadCatch m, MonadLogger m, MonadReader Env m)
+        => String
+        -> (Path Abs Dir -> m ())
+        -> m ()
+withDir dir action = do
+    dir'   <- parseRelDir dir
     curDir <- getCurrentDir
-    let root = curDir </> dir
-
-    checkExists root
-    case (templateName, unpackFlag) of
-        (Nothing, False) -> createEmptyProject root
-        (Nothing, True) -> throwM NotProvidedTemplate
-        (Just t, False) -> do
-            createProjectDirs root
-            copyProjectConfig t root
-        (Just t, True) -> do
-            createProjectDirs root
-            unpackProject t root
-
-new NewModel{..} = do
-    dir <- parseRelDir modelName
-    curDir <- getCurrentDir
-    checkExists $ curDir </> dir
-    createEmptyModel modelCat modelLang dir
-
-checkExists :: (MonadIO m, MonadThrow m, MonadLogger m, MonadReader Env m)
-            => Path Abs Dir
-            -> m ()
-checkExists dir = do
-    exists <- doesDirExist dir
-    when exists $ throwM $ DirAlreadyExists dir
-
+    let root = curDir </> dir'
+    whenDirExists root $ throwM $ DirAlreadyExists root
+    action root
 
 data NewException
     = DirAlreadyExists !(Path Abs Dir)
