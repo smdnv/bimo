@@ -3,10 +3,6 @@ import System.Directory
 
 main :: IO ()
 main = do
-    -- Fail when not found template
-    bimoFailAndStderrContent ["new", "-p", "new-project", "-t", "not-exists"]
-                             ["Not found template"]
-
     -- Add valid template
     bimo ["build", "-p"]
     bimo ["add", "-t", "new-template"]
@@ -14,5 +10,6 @@ main = do
     -- Create new project and run
     bimo ["new", "-p", "new-project", "-t", "new-template"]
     setCurrentDirectory "new-project"
+    doesExist "models"
     bimo ["run"]
 

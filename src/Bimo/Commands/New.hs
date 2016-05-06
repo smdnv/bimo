@@ -42,8 +42,11 @@ new NewProject{..} = do
         Nothing -> createEmptyProject dir
         Just template -> do
             pConf <- asks projectConfig
+            mDir <- asks projectModelsDir
             tPath <- getTemplatePath template
+
             createDir dir
+            createDir $ dir </> mDir
             copyFile tPath $ dir </> pConf
 
 new NewModel{..} = do

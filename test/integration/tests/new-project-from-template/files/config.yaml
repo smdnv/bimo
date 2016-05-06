@@ -6,4 +6,4 @@ user-models:
 - user-model-name: model3
   exec-args: []
 topology:
-- []
+- [model1, model2, model3]

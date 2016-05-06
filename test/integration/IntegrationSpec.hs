@@ -42,6 +42,7 @@ main =
                 test "new-empty-project" testEnv
                 test "new-empty-model" testEnv
                 test "new-project-from-template" testEnv
+                test "new-project-from-template-unpack" testEnv
 
             describe "Build command tests" $ do
                 context "build model" $ do
