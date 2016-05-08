@@ -8,7 +8,7 @@ module Bimo.Commands
 
 import Options.Applicative
 
-import Bimo.Commands.New     (NewOpts(..))
+import Bimo.Commands.New     hiding (new)
 import Bimo.Commands.Build   (BuildOpts(..))
 import Bimo.Commands.Add     (AddOpts(..))
 import Bimo.Commands.Unpack  (UnpackOpts(..))
@@ -32,9 +32,11 @@ new = New <$> opts
         <$> strOption (short 'p'
             <> metavar "PROJECT_NAME"
             <> help "Create new Project")
-        <*> optional (strOption (short 't'
+        <*> optional template
+    template = TemplateOpts
+        <$> strOption (short 't'
             <> metavar "SOURCE_TEMPLATE"
-            <> help "Source template"))
+            <> help "Source template")
         <*> switch (short 'u'
             <> long "unpack"
             <> help "Unpack models from template")

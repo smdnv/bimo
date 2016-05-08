@@ -5,6 +5,7 @@
 
 module Bimo.Commands.New
     ( NewOpts (..)
+    , TemplateOpts (..)
     , new
     ) where
 
@@ -25,14 +26,18 @@ import Bimo.Path
 
 data NewOpts
     = NewProject  { projectName  :: !String
-                  , templateName :: !(Maybe String)
-                  , unpackFlag   :: !Bool
+                  , templateOpts :: !(Maybe TemplateOpts)
                   }
     | NewModel    { modelName :: !String
                   , modelCat  :: !(Maybe String)
                   , modelLang :: !(Maybe String)
                   }
     deriving Show
+
+data TemplateOpts = TemplateOpts
+    { templateName :: !String
+    , unpackFlag :: !Bool
+    } deriving Show
 
 new :: (MonadIO m, MonadThrow m, MonadCatch m, MonadLogger m, MonadReader Env m)
     => NewOpts
@@ -41,15 +46,14 @@ new NewModel{..} =
     withDir modelName $ \root -> createEmptyModel modelCat modelLang root
 new NewProject{..} =
     withDir projectName $ \root ->
-        case (templateName, unpackFlag) of
-            (Nothing, False) -> createEmptyProject root
-            (Nothing, True) -> throwM NotProvidedTemplate
-            (Just t, False) -> do
+        case templateOpts of
+            Nothing -> createEmptyProject root
+            Just (TemplateOpts temp False) -> do
                 createProjectDirs root
-                copyProjectConfig t root
-            (Just t, True) -> do
+                copyProjectConfig temp root
+            Just (TemplateOpts temp True) -> do
                 createProjectDirs root
-                unpackProject t root
+                unpackProject temp root
 
 withDir :: (MonadIO m, MonadThrow m, MonadCatch m, MonadLogger m, MonadReader Env m)
         => String
