@@ -8,46 +8,68 @@ import System.Exit
 import Control.Monad
 import Data.List
 
-run :: FilePath -> [String] -> IO ExitCode
-run exec args = do
-    logInfo $ "Run: " ++ exec ++ " " ++ unwords args
-    (_, _, _, ph) <- createProcess (proc exec args)
-    waitForProcess ph
+shouldFinish :: ExitCode -> IO ()
+shouldFinish ec = unless (ec == ExitSuccess)
+                         (error "Should successfully finish, but fail")
+
+shouldFail :: ExitCode -> IO ()
+shouldFail ec = when (ec == ExitSuccess)
+                     (error "Should fail, but successfully finish")
+
+run :: [String] -> String -> IO (ExitCode, String, String)
+run args input = do
+    exec <- getEnv "BIMO"
+    logInfo $ "Run bimo with args: " ++ unwords args
+    let p = proc exec args
+
+    (ec, out, err) <- readCreateProcessWithExitCode p input
+    unless (null out) (logInfo $ "--- bimo stdout:\n" ++ out)
+    unless (null input) (logInfo $ "--- bimo stdin:\n" ++ input)
+    unless (null err) (logInfo $ "--- bimo stderr:\n" ++ err)
+    return (ec , out, err)
 
 bimo :: [String] -> IO ()
 bimo args = do
-    exec <- getEnv "BIMO"
-    ec <- run exec args
-    unless (ec == ExitSuccess) (error "Should successfully finish, but fail")
+    (ec, _, _) <- run args ""
+    shouldFinish ec
+
+bimo' :: [String] -> String -> IO ()
+bimo' args input = do
+    (ec, _, _) <- run args input
+    shouldFinish ec
 
 bimoStdoutContent :: [String] -> [String] -> IO ()
 bimoStdoutContent args ms = do
-    exec <- getEnv "BIMO"
-    (ec, out, err) <- readCreateProcessWithExitCode (proc exec args) ""
-    unless (ec == ExitSuccess) (error "Should successfully finish, but fail")
+    (ec, out, _) <- run args ""
+    shouldFinish ec
     stringContents out ms
 
 bimoFail :: [String] -> IO ()
 bimoFail args = do
-    exec <- getEnv "BIMO"
-    ec <- run exec args
-    unless (ec /= ExitSuccess) (error "Should fail, but successfully finish")
+    (ec, _, _) <- run args ""
+    shouldFail ec
 
-bimoFailAndStderrContent :: [String] -> [String] -> IO ()
-bimoFailAndStderrContent args ms = do
-    exec <- getEnv "BIMO"
-    (ec, out, err) <- readCreateProcessWithExitCode (proc exec args) ""
-    unless (ec /= ExitSuccess) (error "Should fail, but successfully finish")
+bimoFailStderrContent :: [String] -> [String] -> IO ()
+bimoFailStderrContent args ms = do
+    (ec, _, err) <- run args ""
+    shouldFail ec
+    stringContents err ms
+
+bimoFailStderrContent' :: [String] -> [String] -> String -> IO ()
+bimoFailStderrContent' args ms input = do
+    (ec, _, err) <- run args input
+    shouldFail ec
     stringContents err ms
 
 doesExist :: FilePath -> IO ()
 doesExist p = do
     logInfo $ "Does exist: " ++ p
-    exists <- doesFileExist p
-    if exists
-       then return ()
-       else do exists <- doesDirectoryExist p
-               unless exists . error $ "Does not exist: " ++ p
+    testFile <- doesFileExist p
+    testDir <- doesDirectoryExist p
+    case (testFile, testDir) of
+        (True, False) -> return ()
+        (False, True) -> return ()
+        (_ ,_) -> error $ "Does not exist: " ++ p
 
 fileContents :: FilePath -> [String] -> IO ()
 fileContents file ms = do
@@ -55,13 +77,12 @@ fileContents file ms = do
     stringContents content ms
 
 stringContents :: String -> [String] -> IO ()
-stringContents content ms =
-    mapM_ (testMatch content) ms
+stringContents content = mapM_ (testMatch content)
   where
     testMatch content match =
         unless (match `isInfixOf` content) $
-            error $ "Not find in file: " ++ match ++ "\n"
-                                         ++ content
+            error $ "Not find: " ++ match ++ "\n"
+                                 ++ content
 
 logInfo :: String -> IO ()
 logInfo = putStrLn

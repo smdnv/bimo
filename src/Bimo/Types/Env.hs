@@ -12,9 +12,8 @@ data Env = Env
     , modelSrc    :: !(Path Rel Dir)
     , modelExec   :: !(Path Rel Dir)
     , modelConfig :: !(Path Rel File)
-      -- | Models dir and config
+      -- | Models dir
     , modelsDir     :: !(Path Abs Dir)
-    , modelsConfig  :: !(Path Abs File)
       -- | Templates dir
     , templatesDir  :: !(Path Abs Dir)
       -- | Build scripts dir

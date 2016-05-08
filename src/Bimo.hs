@@ -34,7 +34,6 @@ bimo = do
         modelExec        = $(mkRelDir "exec")
         modelConfig      = $(mkRelFile "model.yaml")
         modelsDir        = appDataDir </> $(mkRelDir "models")
-        modelsConfig     = appDataDir </> $(mkRelFile "models.yaml")
         templatesDir     = appDataDir </> $(mkRelDir "templates")
         buildScriptsDir  = appDataDir </> $(mkRelDir "buildscripts")
         libsDir          = appDataDir </> $(mkRelDir "libs")

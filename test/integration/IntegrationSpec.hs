@@ -61,6 +61,7 @@ main =
 
             describe "Delete command tests" $ do
                 test "delete-template" testEnv
+                test "delete-model" testEnv
 
             describe "Unpack command tests" $ do
                 test "unpack-model" testEnv

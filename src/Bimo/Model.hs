@@ -1,7 +1,16 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE FlexibleContexts #-}
 
-module Bimo.Model where
+module Bimo.Model
+    ( readModelConfig
+    , showModelConfig
+    , createEmptyModel
+    , copyModel
+    , deleteModel
+    , getModelPath
+    , getModelLibPath
+    , ModelException(..)
+    ) where
 
 import Data.Yaml
 import qualified Data.ByteString as B
@@ -27,6 +36,27 @@ readModelConfig p = do
     unlessFileExists p $ throwM $ NotFoundModelConfig p
     readYamlConfig p
 
+showModelConfig :: (MonadIO m, MonadThrow m, MonadReader Env m)
+                => String
+                -> String
+                -> m ()
+showModelConfig n c =
+    getModelPath n c >>= readModelConfig >>= liftIO . print
+
+getModelPath :: (MonadIO m, MonadThrow m, MonadReader Env m)
+             => String
+             -> String
+             -> m (Path Abs File)
+getModelPath n c = do
+    mDir <- asks modelsDir
+    mConf <- asks modelConfig
+    name <- parseRelDir n
+    cat <- parseRelDir c
+    let path = mDir </> cat </> name </> mConf
+
+    unlessFileExists path $ throwM $ NotFoundModelConfig path
+    return path
+
 createEmptyModel :: (MonadIO m, MonadThrow m, MonadReader Env m)
                  => Maybe String
                  -> Maybe String
@@ -48,6 +78,13 @@ copyModel :: (MonadIO m, MonadThrow m, MonadCatch m, MonadReader Env m)
 copyModel src dst = do
     ensureDir dst
     copyDirRecur src dst
+
+deleteModel :: (MonadIO m, MonadThrow m, MonadCatch m, MonadReader Env m)
+            => String
+            -> String
+            -> m ()
+deleteModel n c =
+    getModelPath n c >>= removeDirRecur . parent
 
 getModelLibPath :: (MonadIO m, MonadThrow m, MonadReader Env m)
              => Path Abs Dir

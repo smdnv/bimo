@@ -26,7 +26,12 @@ data ModelConfig
         { libModelName :: !String
         , libModelCategory :: !String
         , libModelArgs :: ![String]
-        } deriving (Eq, Show)
+        } deriving Show
+
+instance Eq ModelConfig where
+    (LibModel n1 c1 _) == (LibModel n2 c2 _) = n1 == n2 && c1 == c2
+    (UserModel n1 _) == (UserModel n2 _) = n1 == n2
+    _ == _ = False
 
 instance FromJSON Project where
     parseJSON (Object v) =

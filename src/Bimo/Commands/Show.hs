@@ -20,6 +20,7 @@ import Bimo.Types.Env
 import Bimo.Types.Config.Project
 
 import Bimo.Project
+import Bimo.Model
 
 data ShowOpts
     = ShowTemplate { templateName :: !String }
@@ -32,4 +33,5 @@ show' :: (MonadIO m, MonadThrow m, MonadMask m, MonadLogger m, MonadReader Env m
       => ShowOpts
       -> m ()
 show' ShowTemplate{..} = showProjectConfig templateName
+show' ShowModel{..} = showModelConfig modelName modelCat
 

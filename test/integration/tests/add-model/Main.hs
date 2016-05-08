@@ -4,16 +4,16 @@ import System.Directory
 main :: IO ()
 main = do
     -- Fail add
-    bimoFailAndStderrContent ["add", "-m"] [ "Not found model exec"
-                                           , "Build model before add"
-                                           ]
+    bimoFailStderrContent ["add", "-m"] [ "Not found model exec"
+                                        , "Build model before add"
+                                        ]
     -- Successful add model
     bimo ["build", "-m"]
     bimo ["add", "-m"]
     bimoStdoutContent ["list", "-m"] ["simple-model"]
 
     -- Fail when model exist in lib
-    bimoFailAndStderrContent ["add", "-m"] ["Model with this name already exists"]
+    bimoFailStderrContent ["add", "-m"] ["Model with this name already exists"]
 
     -- Add to another category
     renameFile "model.yaml" "old-model.yaml"

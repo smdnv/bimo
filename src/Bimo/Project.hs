@@ -9,9 +9,12 @@ module Bimo.Project
     , createEmptyProject
     , copyProjectConfig
     , deleteTemplate
+    , getTemplatePath
+    , getDependentTemplates
     , unpackProject
     , packProject
     , fillModels
+    , ProjectException(..)
     ) where
 
 import Data.Yaml
@@ -83,6 +86,30 @@ getTemplatePath temp = do
 
     unlessFileExists path $ throwM $ NotFoundTemplate path
     return path
+
+getTemplatesList :: (MonadIO m, MonadThrow m, MonadReader Env m)
+                => m [Path Abs File]
+getTemplatesList = do
+    tDir <- asks templatesDir
+    pConf <- asks projectConfig
+    content <- listDir tDir
+    return $ map (</> pConf) $ fst content
+
+getDependentTemplates :: (MonadIO m, MonadThrow m, MonadReader Env m)
+                      => String
+                      -> String
+                      -> m [Path Abs File]
+getDependentTemplates n c = do
+    getModelPath n c
+    getTemplatesList >>= filterM func
+  where
+    func path = do
+        Project{..} <- readProjectConfig path
+        case libModels of
+            Nothing -> throwM $ NoLibModelsInConfig path
+            Just models -> do
+                let model = LibModel n c []
+                return (model `elem` models)
 
 copyProjectConfig :: (MonadIO m, MonadThrow m, MonadReader Env m)
                   => String

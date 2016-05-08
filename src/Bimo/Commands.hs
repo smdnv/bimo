@@ -14,7 +14,7 @@ import Bimo.Commands.Add     (AddOpts(..))
 import Bimo.Commands.Delete  hiding (delete)
 import Bimo.Commands.Unpack  (UnpackOpts(..))
 import Bimo.Commands.List    (ListOpts(..))
-import Bimo.Commands.Show     (ShowOpts(..))
+import Bimo.Commands.Show    (ShowOpts(..))
 
 data Command
     = New NewOpts
@@ -80,6 +80,15 @@ add = Add <$> opts
 delete :: Parser Command
 delete = Delete <$> opts
   where
+    model = DeleteModel
+        <$> strOption (short 'm'
+            <> metavar "MODEL_NAME"
+            <> help "Model name")
+        <*> strOption (short 'c'
+            <> metavar "MODEL_CATEGORY"
+            <> help "Model category")
+        <*> flag Normal Force (short 'f'
+            <> help "Force delete")
     template = DeleteTemplate
         <$> strOption (short 't'
             <> long "template"
@@ -88,7 +97,7 @@ delete = Delete <$> opts
         <*> (flag' Normal (short 'n' <> help "normal add")
             <|> flag' Skip (short 's')
             <|> flag' Force (short 'f'))
-    opts = template
+    opts = model <|>template
 
 unpack :: Parser Command
 unpack = Unpack <$> opts
@@ -113,11 +122,20 @@ list = List <$> opts
 show' :: Parser Command
 show' = Show <$> opts
   where
+    model = ShowModel
+        <$> strOption (short 'm'
+            <> long "name"
+            <> metavar "MODEL_NAME"
+            <> help "Model name")
+        <*> strOption (short 'c'
+            <> long "category"
+            <> metavar "CATEGORY"
+            <> help "Model category")
     template = ShowTemplate
         <$> strOption (short 't'
             <> metavar "TEMPLATE_NAME"
             <> help "Show template config")
-    opts = template
+    opts = model <|> template
 
 clean :: Parser Command
 clean = pure Clean
