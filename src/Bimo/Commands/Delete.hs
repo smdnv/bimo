@@ -34,6 +34,6 @@ data TemplateFlag = Normal | Skip | Force
 delete :: (MonadIO m, MonadThrow m, MonadCatch m, MonadLogger m, MonadReader Env m)
     => DeleteOpts
     -> m ()
-delete opts = do
-    liftIO $ print opts
+delete DeleteTemplate{..} = do
+    deleteTemplate templateName
 

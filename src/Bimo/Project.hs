@@ -8,6 +8,7 @@ module Bimo.Project
     , createProjectDirs
     , createEmptyProject
     , copyProjectConfig
+    , deleteTemplate
     , unpackProject
     , packProject
     , fillModels
@@ -91,6 +92,14 @@ copyProjectConfig temp root = do
     pConf <- asks projectConfig
     srcPath <- getTemplatePath temp
     copyFile srcPath $ root </> pConf
+
+deleteTemplate :: (MonadIO m, MonadThrow m, MonadReader Env m)
+               => String
+               -> m ()
+deleteTemplate t = do
+    path <- getTemplatePath t
+    removeFile path
+    removeDir $ parent path
 
 unpackProject :: (MonadIO m, MonadThrow m, MonadCatch m, MonadReader Env m)
               => String
