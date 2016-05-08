@@ -4,6 +4,7 @@
 module Bimo.Project
     ( readProjectConfig
     , writeProjectConfig
+    , showProjectConfig
     , createProjectDirs
     , createEmptyProject
     , copyProjectConfig
@@ -47,6 +48,12 @@ writeProjectConfig :: (MonadIO m, MonadThrow m, MonadReader Env m)
 writeProjectConfig path conf = do
     let b = encodeProjectConfig conf
     liftIO $ B.writeFile (toFilePath path) b
+
+showProjectConfig :: (MonadIO m, MonadThrow m, MonadReader Env m)
+                   => String
+                   -> m ()
+showProjectConfig t =
+    getTemplatePath t >>= readProjectConfig >>= liftIO . print
 
 createProjectDirs :: (MonadIO m, MonadThrow m, MonadReader Env m)
                   => Path Abs Dir

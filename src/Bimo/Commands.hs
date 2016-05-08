@@ -11,16 +11,20 @@ import Options.Applicative
 import Bimo.Commands.New     hiding (new)
 import Bimo.Commands.Build   (BuildOpts(..))
 import Bimo.Commands.Add     (AddOpts(..))
+import Bimo.Commands.Delete  hiding (delete)
 import Bimo.Commands.Unpack  (UnpackOpts(..))
 import Bimo.Commands.List    (ListOpts(..))
+import Bimo.Commands.Show     (ShowOpts(..))
 
 data Command
     = New NewOpts
     | Build BuildOpts
     | Run
     | Add AddOpts
+    | Delete DeleteOpts
     | Unpack UnpackOpts
     | List ListOpts
+    | Show ShowOpts
     | Clean
     deriving Show
 
@@ -73,6 +77,19 @@ add = Add <$> opts
             <> help "Create template from current project")
     opts = model <|> template
 
+delete :: Parser Command
+delete = Delete <$> opts
+  where
+    template = DeleteTemplate
+        <$> strOption (short 't'
+            <> long "template"
+            <> metavar "TEMPLATE_NAME"
+            <> help "Delete template")
+        <*> (flag' Normal (short 'n' <> help "normal add")
+            <|> flag' Skip (short 's')
+            <|> flag' Force (short 'f'))
+    opts = template
+
 unpack :: Parser Command
 unpack = Unpack <$> opts
   where
@@ -93,6 +110,15 @@ list = List <$> opts
     templates = flag' ListTemplates (short 't' <> help "List all templates")
     opts = models <|> templates
 
+show' :: Parser Command
+show' = Show <$> opts
+  where
+    template = ShowTemplate
+        <$> strOption (short 't'
+            <> metavar "TEMPLATE_NAME"
+            <> help "Show template config")
+    opts = template
+
 clean :: Parser Command
 clean = pure Clean
 
@@ -100,11 +126,22 @@ parser :: ParserInfo Command
 parser = info (helper <*> p) idm
   where
     p = subparser
-         ( command "new" (info (helper <*> new) (progDesc "Create new project or model"))
-        <> command "build" (info (helper <*> build) (progDesc "Build project"))
-        <> command "run" (info (helper <*> run) (progDesc "Run project"))
-        <> command "add" (info (helper <*> add) (progDesc "Add model or template"))
-        <> command "unpack" (info (helper <*> unpack) (progDesc "Unpack model"))
-        <> command "list" (info (helper <*> list) (progDesc "List models or templates"))
-        <> command "clean" (info (helper <*> clean) (progDesc "Clean project"))
+         ( command "new" (info (helper <*> new)
+            (progDesc "Create new project or model"))
+        <> command "build" (info (helper <*> build)
+            (progDesc "Build project"))
+        <> command "run" (info (helper <*> run)
+            (progDesc "Run project"))
+        <> command "add" (info (helper <*> add)
+            (progDesc "Add model or template"))
+        <> command "delete" (info (helper <*> delete)
+            (progDesc "Delete model or template"))
+        <> command "unpack" (info (helper <*> unpack)
+            (progDesc "Unpack model"))
+        <> command "list" (info (helper <*> list)
+            (progDesc "List models or templates"))
+        <> command "show" (info (helper <*> show')
+            (progDesc "Show model or template config"))
+        <> command "clean" (info (helper <*> clean)
+            (progDesc "Clean project"))
          )

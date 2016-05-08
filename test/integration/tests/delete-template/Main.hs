@@ -22,6 +22,8 @@ main = do
     -- Delete template with different strategy
     -- Delete only config.yaml, Normal flag
     bimo ["delete", "-t", "new-template1", "-n"]
+    bimoFailAndStderrContent ["show", "-t", "new-template1"]
+                             ["Not found template"]
 
 
 

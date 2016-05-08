@@ -1,5 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module Bimo
     (bimo)
     where
@@ -17,8 +18,10 @@ import Bimo.Commands.New
 import Bimo.Commands.Build
 import Bimo.Commands.Run
 import Bimo.Commands.Add
+import Bimo.Commands.Delete
 import Bimo.Commands.Unpack
 import Bimo.Commands.List
+import Bimo.Commands.Show
 
 bimo :: IO ()
 bimo = do
@@ -39,13 +42,17 @@ bimo = do
         env              = Env{..}
 
     args <- execParser parser
-    case args of
-        New opts -> runStdoutLoggingT $ runReaderT (new opts) env
-        Build opts -> runStdoutLoggingT $ runReaderT (build opts) env
-        Run -> runStdoutLoggingT $ runReaderT run env
-        Add opts -> runStdoutLoggingT $ runReaderT (add opts) env
-        Unpack opts -> runStdoutLoggingT $ runReaderT (unpack opts) env
-        List opts -> runStdoutLoggingT $ runReaderT (list opts) env
-        _ -> print args
+    let action :: ReaderT Env (LoggingT IO) () = case args of
+            New    opts -> new opts
+            Build  opts -> build opts
+            Run         -> run
+            Add    opts -> add opts
+            Delete opts -> delete opts
+            Unpack opts -> unpack opts
+            List   opts -> list opts
+            Show   opts -> show' opts
+            _           -> fail "no command"
+
+    runStdoutLoggingT $ runReaderT action env
 
 
