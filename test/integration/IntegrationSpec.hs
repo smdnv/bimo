@@ -59,6 +59,9 @@ main =
                 test "add-model" testEnv
                 test "add-template" testEnv
 
+            describe "Delete command tests" $ do
+                test "delete-template" testEnv
+
             describe "Unpack command tests" $ do
                 test "unpack-model" testEnv
 
