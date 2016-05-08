@@ -3,7 +3,5 @@ user-models:
   exec-args: []
 - user-model-name: model2
   exec-args: []
-- user-model-name: model3
-  exec-args: []
 topology:
-- [model1, model2, model3]
+- [model1, model2]
