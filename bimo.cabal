@@ -45,6 +45,7 @@ library
                      , yaml
                      , aeson-pretty
                      , bytestring
+                     , text
                      , path
                      , path-io
                      , filepath

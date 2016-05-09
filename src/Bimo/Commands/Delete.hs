@@ -5,7 +5,8 @@
 
 module Bimo.Commands.Delete where
 
-import Data.List (foldl')
+import qualified Data.Text as T
+import Data.List
 import Control.Monad.Reader
 import Control.Monad.Logger
 import Control.Monad.Catch
@@ -33,68 +34,100 @@ data DeleteOpts
 data Flags = Normal | Skip | Force
     deriving Show
 
-delete :: (MonadIO m, MonadThrow m, MonadCatch m, MonadLogger m, MonadReader Env m)
-    => DeleteOpts
-    -> m ()
-delete DeleteModel{..} = do
-    templates <- getDependentTemplates modelName modelCat
-    if null templates
-        then do
-            let msg = concat [ "Delete model: "
-                             , modelCat
-                             , "/"
-                             , modelName
-                             , "? (yes/no)"
-                             ]
-            userConfirm msg $ deleteModel modelName modelCat
+delete' :: (MonadIO m, MonadThrow m, MonadCatch m, MonadLogger m, MonadReader Env m)
+        => DeleteOpts
+        -> m ()
+delete' (DeleteModel n c f) = do
+    paths <- getTemplatesList
+    ts <- getDependentTemplates n c paths
+    if null ts
+        then userConfirm (logInfoN $ deleteModelNormalMsg n c)
+                         (deleteModel n c)
         else
-            case modelFlag of
+            case f of
                 Normal -> throwM $
-                    ExistingDependence (modelCat ++ "/" ++ modelName) templates
-                Force -> do
-                    let msg = concat [ "Model: "
-                                     , modelCat
-                                     , "/"
-                                     , modelName
-                                     , " used in these templates:\n"
-                                     , show templates
-                                     , "\nStill delete? "
-                                     , "(yes/no)"
-                                     ]
-                    userConfirm msg $ deleteModel modelName modelCat
+                    ExistingDependence (prettyName n c) ts
+                Force -> userConfirm (logWarnN $ deleteModelForceMsg n c ts)
+                                     (deleteModel n c)
+  where
+    deleteModelNormalMsg n c =
+        T.concat [ "Delete model: "
+                 , prettyName n c
+                 , "? (yes/no)"
+                 ]
+    deleteModelForceMsg n c ts =
+        T.concat [ "Delete model: "
+                 , prettyName n c
+                 , "\nDependent templates, break if delete model\n"
+                 , prettyTemplatesList ts
+                 , "\nAnyway delete? (yes/no):"
+                 ]
 
-delete DeleteTemplate{..} =
-    case templateFlag of
-        Normal -> do
-            let msg = concat [ "Delete template: "
-                            , templateName
-                            , "? (yes/no)"
-                            ]
-
-            userConfirm msg $ deleteTemplate templateName
-        Skip -> do
-            tPath <- getTemplatePath templateName
+delete' (DeleteTemplate t f) =
+    case f of
+        Normal -> userConfirm (logInfoN $ deleteTempNormalMsg t)
+                              (deleteTemplate t)
+        f'   -> do
+            tPath <- getTemplatePath t
             Project{..} <- readProjectConfig tPath
             case libModels of
                 Nothing -> throwM $ NoLibModelsInConfig tPath
                 Just models -> do
-                    (toDelete, toSkip) <- foldl' process (return ([], [])) models
-                    liftIO $ print toDelete
-                    liftIO $ print toSkip
+                    (d, s) <- foldl' (process tPath)
+                                     (return ([], []))
+                                     models
+                    case f' of
+                        Skip ->
+                            userConfirm (logInfoN $ deleteTempSkipMsg s d t)
+                                        (do mapM_ (\(n, c, _) -> deleteModel n c) d
+                                            deleteTemplate t)
+                        Force -> do
+                            let ts = d ++ s
+                            userConfirm (logWarnN $ deleteTempForceMsg s d t)
+                                        (do mapM_ (\(n, c, _) -> deleteModel n c) ts
+                                            deleteTemplate t)
   where
-    process acc (LibModel n c _) = do
+    deleteTempNormalMsg t =
+        T.concat [ "Delete template: "
+                 , T.pack t
+                 , "? (yes/no)"
+                 ]
+    deleteTempSkipMsg s d t =
+        T.concat [ "Skip models:\n"
+                 , prettyDependency s
+                 , "\nDelete models:\n"
+                 , prettyDependency d
+                 , "\nDelete template: "
+                 , T.pack t
+                 , "? (yes/no)"
+                 ]
+    deleteTempForceMsg s d t =
+        T.concat [ "Delete models used in other templates:\n"
+                 , prettyDependency s
+                 , "\nDelete models:\n"
+                 , prettyDependency d
+                 , "\nDelete template: "
+                 , T.pack t
+                 , "? (yes/no)"
+                 ]
+    prettyDependency =
+        T.concat . map (\(n, c, ts) -> T.concat [ prettyName n c
+                                                , prettyTemplatesList ts
+                                                , "\n"
+                                                ])
+    process path acc (LibModel n c _) = do
         (toDelete, toSkip) <- acc
-        templates <- getDependentTemplates n c
+        paths <- getTemplatesList
+        let paths' = delete path paths
+
+        templates <- getDependentTemplates n c paths'
         return $ if null templates
              then ((n, c, templates):toDelete, toSkip)
              else (toDelete, (n, c, templates):toSkip)
 
-    deleteModel (LibModel n c _) = catch (delete $ DeleteModel n c Normal) skip
-    skip (ExistingDependence n _) = liftIO $ putStrLn $ "skip model: " ++ n
-    skip e = throwM e
-
-userConfirm msg yes = do
-    liftIO $ putStrLn msg
+userConfirm :: (MonadIO m, MonadThrow m) => m () -> m () -> m ()
+userConfirm log yes = do
+    log
     line <- liftIO getLine
     case line of
         "yes"   -> yes

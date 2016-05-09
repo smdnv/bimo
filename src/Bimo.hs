@@ -46,7 +46,7 @@ bimo = do
             Build  opts -> build opts
             Run         -> run
             Add    opts -> add opts
-            Delete opts -> delete opts
+            Delete opts -> delete' opts
             Unpack opts -> unpack opts
             List   opts -> list opts
             Show   opts -> show' opts

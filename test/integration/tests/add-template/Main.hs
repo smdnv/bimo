@@ -10,9 +10,7 @@ main = do
     -- Fail add
     setCurrentDirectory prj1
     bimoFailStderrContent ["add", "-t", "new-template"]
-                             [ "Not found model exec"
-                             , "Build model before add"
-                             ]
+                          [ "Not found model exec" ]
 
     -- Successful add template
     bimo ["build", "-p"]
@@ -21,12 +19,12 @@ main = do
 
     -- Fail when template already exists
     bimoFailStderrContent ["add", "-t", "new-template"]
-                             ["Template with this name already exists"]
+                          ["Template with this name already exists"]
 
     -- Fail when template model already exists
     setCurrentDirectory prj2
     bimo ["build", "-p"]
     bimoFailStderrContent ["add", "-t", "new-template2"]
-                             ["Model with this name already exists"]
+                          ["Model with this name already exists"]
 
 

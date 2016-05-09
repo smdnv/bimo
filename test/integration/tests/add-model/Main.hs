@@ -4,9 +4,7 @@ import System.Directory
 main :: IO ()
 main = do
     -- Fail add
-    bimoFailStderrContent ["add", "-m"] [ "Not found model exec"
-                                        , "Build model before add"
-                                        ]
+    bimoFailStderrContent ["add", "-m"] [ "Not found model exec"]
     -- Successful add model
     bimo ["build", "-m"]
     bimo ["add", "-m"]

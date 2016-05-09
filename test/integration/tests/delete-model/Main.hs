@@ -15,7 +15,7 @@ main = do
                            ["Existing dependence with"]
                            "yes"
     -- Delete template
-    bimo ["delete", "-t", "new-template1", "-n"] "yes"
+    bimo' ["delete", "-t", "new-template1", "-n"] "yes"
     -- Successful delete models
     bimo' ["delete", "-m", "model1", "-c", "none"] "yes"
     bimoFail ["show", "-m", "model1", "-c", "none"]

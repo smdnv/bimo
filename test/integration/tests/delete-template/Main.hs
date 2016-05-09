@@ -44,4 +44,17 @@ main = do
     bimoFail ["show", "-m", "model1", "-c", "none"]
     bimo ["show", "-m", "model2", "-c", "none"]
 
+    -- Clear model namespace
+    bimo' ["delete", "-m", "model2", "-c", "none", "-f"] "yes"
+    -- Add template
+    bimo ["add", "-t", "new-template1"]
+
+    -- Delete with Force flag, delete all models
+    -- Delete model1 and model2, that breaks new-template2
+    bimo' ["delete", "-t", "new-template1", "-f"] "yes"
+    bimoFail ["show", "-m", "model1", "-c", "none"]
+    bimoFail ["show", "-m", "model2", "-c", "none"]
+
+    setCurrentDirectory prj2
+    bimoFail ["run"]
 

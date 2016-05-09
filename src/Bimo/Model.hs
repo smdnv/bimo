@@ -1,8 +1,10 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Bimo.Model
-    ( readModelConfig
+    ( prettyName
+    , readModelConfig
     , showModelConfig
     , createEmptyModel
     , copyModel
@@ -13,6 +15,7 @@ module Bimo.Model
     ) where
 
 import Data.Yaml
+import Data.String
 import qualified Data.ByteString as B
 import Control.Monad
 import Control.Monad.Reader
@@ -28,6 +31,12 @@ import Bimo.Types.Config.Model
 
 import Bimo.Config
 import Bimo.Path
+
+prettyName :: (IsString a, Monoid a) => String -> String -> a
+prettyName n c =
+    let name = fromString n
+        cat  = fromString c
+     in cat `mappend` "/" `mappend` name
 
 readModelConfig :: (MonadIO m, MonadThrow m)
                 => Path Abs File
@@ -117,6 +126,6 @@ instance Show ModelException where
     show (NotFoundModelConfig path) =
         "Not found model config: " ++ show path
     show (NotFoundModelExec path) =
-        "Not found model exec: " ++ show path ++ " " ++ "Build model before add"
+        "Not found model exec: " ++ show path
     show (ModelAlreadyExists path) =
         "Model with this name already exists in category: " ++ show path

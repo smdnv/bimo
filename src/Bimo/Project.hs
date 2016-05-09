@@ -1,8 +1,11 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Bimo.Project
-    ( readProjectConfig
+    ( prettyTemplatesList
+    , readProjectConfig
     , writeProjectConfig
     , showProjectConfig
     , createProjectDirs
@@ -10,6 +13,7 @@ module Bimo.Project
     , copyProjectConfig
     , deleteTemplate
     , getTemplatePath
+    , getTemplatesList
     , getDependentTemplates
     , unpackProject
     , packProject
@@ -18,6 +22,7 @@ module Bimo.Project
     ) where
 
 import Data.Yaml
+import Data.String
 import qualified Data.Map as M
 import qualified Data.ByteString as B
 import Data.List
@@ -28,6 +33,7 @@ import Control.Monad.Catch
 import Control.Monad.IO.Class
 import Path
 import Path.IO
+import System.FilePath (dropTrailingPathSeparator)
 
 import Bimo.Types.Env
 import Bimo.Types.Project
@@ -37,6 +43,12 @@ import Bimo.Types.Config.Model
 import Bimo.Config
 import Bimo.Model
 import Bimo.Path
+
+prettyTemplatesList :: (Monoid a, IsString a) => [Path Abs File] -> a
+prettyTemplatesList ts =
+    foldl' mappend mempty $ map func ts
+  where
+    func = fromString . dropTrailingPathSeparator . fromRelDir . dirname . parent
 
 readProjectConfig :: (MonadIO m, MonadThrow m)
                   => Path Abs File
@@ -98,10 +110,11 @@ getTemplatesList = do
 getDependentTemplates :: (MonadIO m, MonadThrow m, MonadReader Env m)
                       => String
                       -> String
+                      -> [Path Abs File]
                       -> m [Path Abs File]
-getDependentTemplates n c = do
+getDependentTemplates n c paths = do
     getModelPath n c
-    getTemplatesList >>= filterM func
+    filterM func paths
   where
     func path = do
         Project{..} <- readProjectConfig path
