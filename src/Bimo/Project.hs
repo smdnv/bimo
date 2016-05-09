@@ -5,7 +5,7 @@
 
 module Bimo.Project
     ( prettyTemplatesList
-    , checkConfigExist
+    , checkProjectConfigExist
     , readProjectConfig
     , writeProjectConfig
     , showProjectConfig
@@ -51,14 +51,14 @@ prettyTemplatesList ts =
   where
     func = fromString . dropTrailingPathSeparator . fromRelDir . dirname . parent
 
-checkConfigExist :: (MonadIO m, MonadThrow m) => Path Abs File -> m ()
-checkConfigExist p = unlessFileExists p $ throwM $ NotFoundProjectConfig p
+checkProjectConfigExist :: (MonadIO m, MonadThrow m) => Path Abs File -> m ()
+checkProjectConfigExist p = unlessFileExists p $ throwM $ NotFoundProjectConfig p
 
 readProjectConfig :: (MonadIO m, MonadThrow m)
                   => Path Abs File
                   -> m Project
 readProjectConfig p = do
-    checkConfigExist p
+    checkProjectConfigExist p
     readYamlConfig p
 
 writeProjectConfig :: (MonadIO m, MonadThrow m, MonadReader Env m)
@@ -130,7 +130,7 @@ copyProjectConfig :: (MonadIO m, MonadThrow m, MonadReader Env m)
                   -> Path Abs File
                   -> m ()
 copyProjectConfig src dst = do
-    checkConfigExist src
+    checkProjectConfigExist src
     whenFileExists dst $ throwM $ TemplateAlreadyExists dst
     ensureDir $ parent dst
     copyFile src dst
@@ -139,7 +139,7 @@ deleteTemplate :: (MonadIO m, MonadThrow m, MonadReader Env m)
                => Path Abs File
                -> m ()
 deleteTemplate t = do
-    checkConfigExist t
+    checkProjectConfigExist t
     removeFile t
     removeDir $ parent t
 
@@ -152,7 +152,7 @@ unpackProject temp root = do
     mLibDir  <- asks modelsDir
     mPrjDir  <- asks projectModelsDir
     tempPath <- getTemplatePath temp
-    checkConfigExist tempPath
+    checkProjectConfigExist tempPath
     let dstDir = root </> mPrjDir
 
     Project{..} <- readProjectConfig tempPath

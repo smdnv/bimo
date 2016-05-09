@@ -26,7 +26,7 @@ data RenameOpts
                   , oldModelCat  :: !String
                   , newModelName :: !String
                   , newModelCat  :: !String
-                  , recurUpdate  :: !Bool
+                  , updateFlag   :: !Bool
                   }
     | RenameTemplate { oldTemplateName :: !String
                      , newTemplateName :: !String
@@ -42,6 +42,7 @@ rename RenameTemplate{..} = do
 
     copyProjectConfig old new
     deleteTemplate old
+rename opts = liftIO $ print opts
 
 
 
