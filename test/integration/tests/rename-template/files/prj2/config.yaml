@@ -1,0 +1,9 @@
+user-models:
+- user-model-name: model3
+  exec-args: []
+lib-models:
+- lib-model-name: model2
+  category: none
+  exec-args: []
+topology:
+- [model2, model3]

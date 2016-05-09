@@ -63,6 +63,10 @@ main =
                 test "delete-template" testEnv
                 test "delete-model" testEnv
 
+            describe "Rename command tests" $ do
+                test "rename-template" testEnv
+                -- test "delete-model" testEnv
+
             describe "Unpack command tests" $ do
                 test "unpack-model" testEnv
 
