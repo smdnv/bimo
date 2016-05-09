@@ -19,6 +19,7 @@ import Bimo.Commands.Build
 import Bimo.Commands.Run
 import Bimo.Commands.Add
 import Bimo.Commands.Delete
+import Bimo.Commands.Rename
 import Bimo.Commands.Unpack
 import Bimo.Commands.List
 import Bimo.Commands.Show
@@ -47,6 +48,7 @@ bimo = do
             Run         -> run
             Add    opts -> add opts
             Delete opts -> delete' opts
+            Rename opts -> rename opts
             Unpack opts -> unpack opts
             List   opts -> list opts
             Show   opts -> show' opts

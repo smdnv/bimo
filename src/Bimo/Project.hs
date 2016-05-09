@@ -5,6 +5,7 @@
 
 module Bimo.Project
     ( prettyTemplatesList
+    , checkConfigExist
     , readProjectConfig
     , writeProjectConfig
     , showProjectConfig
@@ -50,11 +51,14 @@ prettyTemplatesList ts =
   where
     func = fromString . dropTrailingPathSeparator . fromRelDir . dirname . parent
 
+checkConfigExist :: (MonadIO m, MonadThrow m) => Path Abs File -> m ()
+checkConfigExist p = unlessFileExists p $ throwM $ NotFoundProjectConfig p
+
 readProjectConfig :: (MonadIO m, MonadThrow m)
                   => Path Abs File
                   -> m Project
 readProjectConfig p = do
-    unlessFileExists p $ throwM $ NotFoundProjectConfig p
+    checkConfigExist p
     readYamlConfig p
 
 writeProjectConfig :: (MonadIO m, MonadThrow m, MonadReader Env m)
@@ -94,10 +98,7 @@ getTemplatePath temp = do
     tDir <- asks templatesDir
     pConf <- asks projectConfig
     template <- parseRelDir temp
-    let path = tDir </> template </> pConf
-
-    unlessFileExists path $ throwM $ NotFoundTemplate path
-    return path
+    return $ tDir </> template </> pConf
 
 getTemplatesList :: (MonadIO m, MonadThrow m, MonadReader Env m)
                 => m [Path Abs File]
@@ -125,21 +126,22 @@ getDependentTemplates n c paths = do
                 return (model `elem` models)
 
 copyProjectConfig :: (MonadIO m, MonadThrow m, MonadReader Env m)
-                  => String
-                  -> Path Abs Dir
+                  => Path Abs File
+                  -> Path Abs File
                   -> m ()
-copyProjectConfig temp root = do
-    pConf <- asks projectConfig
-    srcPath <- getTemplatePath temp
-    copyFile srcPath $ root </> pConf
+copyProjectConfig src dst = do
+    checkConfigExist src
+    whenFileExists dst $ throwM $ TemplateAlreadyExists dst
+    ensureDir $ parent dst
+    copyFile src dst
 
 deleteTemplate :: (MonadIO m, MonadThrow m, MonadReader Env m)
-               => String
+               => Path Abs File
                -> m ()
 deleteTemplate t = do
-    path <- getTemplatePath t
-    removeFile path
-    removeDir $ parent path
+    checkConfigExist t
+    removeFile t
+    removeDir $ parent t
 
 unpackProject :: (MonadIO m, MonadThrow m, MonadCatch m, MonadReader Env m)
               => String
@@ -150,6 +152,7 @@ unpackProject temp root = do
     mLibDir  <- asks modelsDir
     mPrjDir  <- asks projectModelsDir
     tempPath <- getTemplatePath temp
+    checkConfigExist tempPath
     let dstDir = root </> mPrjDir
 
     Project{..} <- readProjectConfig tempPath
@@ -179,7 +182,9 @@ packProject temp root = do
     tempName <- parseRelDir temp
     let dstDir = tDir </> tempName
 
-    whenDirExists dstDir $ throwM $ TemplateAlreadyExists dstDir
+    dstPath <- getTemplatePath temp
+
+    whenFileExists dstPath $ throwM $ TemplateAlreadyExists dstPath
 
     pConf  <- asks projectConfig
     mDir   <- asks projectModelsDir
@@ -198,7 +203,7 @@ packProject temp root = do
             mapM_ (uncurry copyModel) srcDst
 
             ensureDir dstDir
-            writeProjectConfig (dstDir </> pConf) prj
+            writeProjectConfig dstPath prj
     where
       process srcRoot m@(UserModel name _) = do
           name' <- parseRelDir name
@@ -264,11 +269,9 @@ fillModels (Project uModels lModels t) = do
 
 data ProjectException
     = NotFoundProjectConfig !(Path Abs File)
-    | NotFoundTemplate !(Path Abs File)
-    | TemplateAlreadyExists !(Path Abs Dir)
+    | TemplateAlreadyExists !(Path Abs File)
     | NotFoundAnyModel ![String]
     | NotFoundModelInConfig !String
-    -- | NotFoundModelExec !(Path Abs File)
     | NoLibModelsInConfig !(Path Abs File)
     | NoUserModelsInConfig !(Path Abs File)
 
@@ -277,16 +280,12 @@ instance Exception ProjectException
 instance Show ProjectException where
     show (NotFoundProjectConfig path) =
         "Not found project config: " ++ show path
-    show (NotFoundTemplate path) =
-        "Not found template: " ++ show path
     show (TemplateAlreadyExists path) =
         "Template with this name already exists: " ++ show path
     show (NotFoundAnyModel ms) =
         "Not found any model in config file: " ++ show ms
     show (NotFoundModelInConfig name) =
         "Not found model in config: " ++ show name
-    -- show (NotFoundModelExec path) =
-    --     "Not found model exec: " ++ show path
     show (NoLibModelsInConfig path) =
         "Not found any lib model in config: " ++ show path
     show (NoUserModelsInConfig path) =

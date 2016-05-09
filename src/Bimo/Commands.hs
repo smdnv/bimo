@@ -12,6 +12,7 @@ import Bimo.Commands.New     hiding (new)
 import Bimo.Commands.Build   (BuildOpts(..))
 import Bimo.Commands.Add     (AddOpts(..))
 import Bimo.Commands.Delete  hiding (delete)
+import Bimo.Commands.Rename  (RenameOpts(..))
 import Bimo.Commands.Unpack  (UnpackOpts(..))
 import Bimo.Commands.List    (ListOpts(..))
 import Bimo.Commands.Show    (ShowOpts(..))
@@ -22,6 +23,7 @@ data Command
     | Run
     | Add AddOpts
     | Delete DeleteOpts
+    | Rename RenameOpts
     | Unpack UnpackOpts
     | List ListOpts
     | Show ShowOpts
@@ -91,13 +93,39 @@ delete = Delete <$> opts
             <> help "Force delete")
     template = DeleteTemplate
         <$> strOption (short 't'
-            <> long "template"
             <> metavar "TEMPLATE_NAME"
             <> help "Delete template")
         <*> (flag' Normal (short 'n' <> help "normal add")
             <|> flag' Skip (short 's')
             <|> flag' Force (short 'f'))
     opts = model <|>template
+
+rename :: Parser Command
+rename = Rename <$> opts
+  where
+    template = RenameTemplate
+        <$> strOption (short 't'
+            <> metavar "OLD_NAME"
+            <> help "Old template name")
+        <*> strOption (short 'T'
+            <> metavar "NEW_NAME"
+            <> help "New template name")
+    model = RenameModel
+        <$> strOption (short 'm'
+            <> metavar "OLD_NAME"
+            <> help "Old model name")
+        <*> strOption (short 'c'
+            <> metavar "OLD_CATEGORY"
+            <> help "Old model category")
+        <*> strOption (short 'M'
+            <> metavar "NEW_NAME"
+            <> help "New model name")
+        <*> strOption (short 'C'
+            <> metavar "New_CATEGORY"
+            <> help "New model category")
+        <*> switch (short 'u'
+            <> help "Update all dependent templates")
+    opts = model <|> template
 
 unpack :: Parser Command
 unpack = Unpack <$> opts
@@ -154,6 +182,8 @@ parser = info (helper <*> p) idm
             (progDesc "Add model or template"))
         <> command "delete" (info (helper <*> delete)
             (progDesc "Delete model or template"))
+        <> command "rename" (info (helper <*> rename)
+            (progDesc "Rename model or template"))
         <> command "unpack" (info (helper <*> unpack)
             (progDesc "Unpack model"))
         <> command "list" (info (helper <*> list)

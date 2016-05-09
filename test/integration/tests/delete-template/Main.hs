@@ -30,7 +30,7 @@ main = do
     -- Delete only config.yaml, Normal flag
     bimo' ["delete", "-t", "new-template1", "-n"] "yes"
     bimoFailStderrContent ["show", "-t", "new-template1"]
-                          ["Not found template"]
+                          ["Not found project config"]
 
     -- Clear model namespace
     bimo' ["delete", "-m", "model1", "-c", "none", "-f"] "yes"

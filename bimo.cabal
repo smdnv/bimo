@@ -26,6 +26,7 @@ library
                      , Bimo.Commands.Run
                      , Bimo.Commands.Add
                      , Bimo.Commands.Delete
+                     , Bimo.Commands.Rename
                      , Bimo.Commands.Unpack
                      , Bimo.Commands.List
                      , Bimo.Commands.Show

@@ -49,8 +49,11 @@ new NewProject{..} =
         case templateOpts of
             Nothing -> createEmptyProject root
             Just (TemplateOpts temp False) -> do
+                pConf <- asks projectConfig
+                src <- getTemplatePath temp
+                let dst = root </> pConf
                 createProjectDirs root
-                copyProjectConfig temp root
+                copyProjectConfig src dst
             Just (TemplateOpts temp True) -> do
                 createProjectDirs root
                 unpackProject temp root

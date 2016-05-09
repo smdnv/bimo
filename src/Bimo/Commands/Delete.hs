@@ -63,12 +63,12 @@ delete' (DeleteModel n c f) = do
                  , "\nAnyway delete? (yes/no):"
                  ]
 
-delete' (DeleteTemplate t f) =
+delete' (DeleteTemplate t f) = do
+    tPath <- getTemplatePath t
     case f of
         Normal -> userConfirm (logInfoN $ deleteTempNormalMsg t)
-                              (deleteTemplate t)
+                              (deleteTemplate tPath)
         f'   -> do
-            tPath <- getTemplatePath t
             Project{..} <- readProjectConfig tPath
             case libModels of
                 Nothing -> throwM $ NoLibModelsInConfig tPath
@@ -80,12 +80,12 @@ delete' (DeleteTemplate t f) =
                         Skip ->
                             userConfirm (logInfoN $ deleteTempSkipMsg s d t)
                                         (do mapM_ (\(n, c, _) -> deleteModel n c) d
-                                            deleteTemplate t)
+                                            deleteTemplate tPath)
                         Force -> do
                             let ts = d ++ s
                             userConfirm (logWarnN $ deleteTempForceMsg s d t)
                                         (do mapM_ (\(n, c, _) -> deleteModel n c) ts
-                                            deleteTemplate t)
+                                            deleteTemplate tPath)
   where
     deleteTempNormalMsg t =
         T.concat [ "Delete template: "
