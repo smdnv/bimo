@@ -1,6 +1,5 @@
 name: simple-model
 category: none
-version: '0.0.1'
 descr: model description there
 language: c
 source:

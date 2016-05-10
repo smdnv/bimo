@@ -57,14 +57,18 @@ build BuildModel = do
     name        <- parseRelFile modelName
     execDir     <- asks modelExec
     srcDir      <- asks modelSrc
-    buildScript <- getBuildScript language
-    libPaths    <- getLibPaths language libs
-    files       <- mapM (\p -> do path <- parseRelFile p
-                                  return $ srcDir </> path) srcFiles
+    buildScript <- maybe (getBuildScript language)
+                         (parseRelFile >=> return . (</>) curDir) userBuildScript
+    libPaths    <- maybe (return Nothing)
+                         (getLibPaths language >=> return . Just) libs
+    files       <- maybe (return Nothing)
+                         (mapM (\p -> do path <- parseRelFile p
+                                         return $ srcDir </> path)
+                          >=> return . Just) srcFiles
 
     let execFile = execDir </> name
 
-    require <- requireBuild files execFile
+    require <- maybe (return True) (`requireBuild` execFile) files
     when require $ build' buildScript files execFile libPaths
   where
     requireBuild src dst = do
@@ -75,23 +79,28 @@ build BuildModel = do
                     return $ dstTime <= maximum times
             else return True
     build' script src dst libs = do
-        let libs' = map fromAbsDir libs
-            src' = map fromRelFile src
-            args = [ "-s"
-                   , foldl' (++) "" $ intersperse ":" src'
-                   , "-d"
-                   , fromRelFile dst
-                   ] ++ if null libs then [] else
-                   [ "-l"
-                   , foldl' (++) "" $ intersperse ":" (map fromAbsDir libs)
-                   ]
+        let srcFlag = case src of
+                Nothing -> []
+                Just src' ->
+                    [ "-s"
+                    , foldl' (++) "" $ intersperse ":" (map fromRelFile src')
+                    ]
+            dstFlag = [ "-d"
+                      , fromRelFile dst
+                      ]
+            libFlag = case libs of
+                Nothing -> []
+                Just libs' ->
+                    [ "-l"
+                    , foldl' (++) "" $ intersperse ":" (map fromAbsDir libs')
+                    ]
+            args = srcFlag ++ dstFlag ++ libFlag
             p = proc (fromAbsFile script) args
 
         liftIO $ mapM_ print args
 
         (ec, out, err) <- liftIO $ readCreateProcessWithExitCode p ""
         unless (ec == ExitSuccess) $ throwM $ ModelBuildFailure dst out err
-
 
 data BuildException
     = ModelBuildFailure !(Path Rel File) !String !String

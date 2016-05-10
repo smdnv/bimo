@@ -43,7 +43,7 @@ instance ToJSON Project where
     toJSON Project{..} = object
       [ "user-models" .= userModels
       , "lib-models"  .= libModels
-      , "topology"   .= topology
+      , "topology"    .= topology
       ]
 
 instance FromJSON ModelConfig where

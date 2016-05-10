@@ -27,35 +27,35 @@ import Data.Aeson.Encode.Pretty (keyOrder)
 import Data.Maybe (fromMaybe)
 
 data Model = Model
-    { modelName :: !String
-    , category  :: !String
-    , version   :: !String
-    , descr     :: !String
-    , language  :: !String
-    , srcFiles  :: ![String]
-    , libs      :: ![String]
+    { modelName       :: !String
+    , category        :: !String
+    , descr           :: !String
+    , language        :: !String
+    , srcFiles        :: !(Maybe [String])
+    , libs            :: !(Maybe [String])
+    , userBuildScript :: !(Maybe String)
     } deriving (Eq, Show)
 
 instance FromJSON Model where
   parseJSON (Object v) = do
-    modelName <- v .: "name"
-    category  <- v .: "category"
-    version   <- v .: "version"
-    descr     <- v .: "descr"
-    language  <- v .: "language"
-    srcFiles  <- v .: "source"
-    libs      <- v .: "libs"
+    modelName       <- v .: "name"
+    category        <- v .: "category"
+    descr           <- v .: "descr"
+    language        <- v .: "language"
+    srcFiles        <- v .:? "source"
+    libs            <- v .:? "libs"
+    userBuildScript <- v .:? "user-build-script"
     return Model{..}
 
 instance ToJSON Model where
   toJSON Model{..} = object
-    [ "name"     .= modelName
-    , "category" .= category
-    , "version"  .= version
-    , "descr"    .= descr
-    , "language" .= language
-    , "source"   .= srcFiles
-    , "libs"     .= libs
+    [ "name"              .= modelName
+    , "category"          .= category
+    , "descr"             .= descr
+    , "language"          .= language
+    , "source"            .= srcFiles
+    , "libs"              .= libs
+    , "user-build-script" .= userBuildScript
     ]
 
 emptyModelConfig :: String
@@ -65,15 +65,15 @@ emptyModelConfig :: String
 emptyModelConfig name category language =
     let o = keyOrder [ "name"
                      , "category"
-                     , "version"
                      , "descr"
                      , "language"
                      , "source"
                      , "libs"
+                     , "user-build-script"
                      ]
         cat   = fromMaybe "none" category
         lang  = fromMaybe "" language
         descr = "model description there"
         conf  = setConfCompare o defConfig
-        model = Model name cat "0.0.1" descr lang [] []
+        model = Model name cat descr lang Nothing Nothing Nothing
      in encodePretty conf model

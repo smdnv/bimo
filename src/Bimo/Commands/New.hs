@@ -43,7 +43,7 @@ new :: (MonadIO m, MonadThrow m, MonadCatch m, MonadLogger m, MonadReader Env m)
     => NewOpts
     -> m ()
 new NewModel{..} =
-    withDir modelName $ \root -> createEmptyModel modelCat modelLang root
+    withDir modelName $ \root -> createEmptyModel modelName modelCat modelLang root
 new NewProject{..} =
     withDir projectName $ \root ->
         case templateOpts of

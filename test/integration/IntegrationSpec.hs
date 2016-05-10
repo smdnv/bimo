@@ -49,6 +49,7 @@ main =
                     test "build-simple-c-model" testEnv
                     test "build-simple-c-model-with-lib" testEnv
                     test "build-c-with-mult-files-and-libs" testEnv
+                    test "build-c-model-user-build-script" testEnv
                 context "build project" $ do
                     test "build-project" testEnv
 

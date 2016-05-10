@@ -47,7 +47,6 @@ list ListModels = do
     prettyPair (cat, models) =
         cat <> ":\n" <> T.concat (map (\m -> " - " <>  m <> "\n") models)
 
-
 list ListTemplates = do
     templates <- getTemplatesList
     logInfoN $ T.concat [ "Available templates:\n"

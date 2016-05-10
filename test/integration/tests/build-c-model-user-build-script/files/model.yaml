@@ -4,3 +4,4 @@ descr: model description there
 source:
 - simple-model.c
 language: c
+user-build-script: buildscript

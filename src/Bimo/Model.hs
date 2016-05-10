@@ -68,17 +68,17 @@ getModelPath n c = do
     return $  mDir </> cat </> name </> mConf
 
 createEmptyModel :: (MonadIO m, MonadThrow m, MonadReader Env m)
-                 => Maybe String
+                 => String
+                 -> Maybe String
                  -> Maybe String
                  -> Path Abs Dir
                  -> m ()
-createEmptyModel cat lang modelDir = do
+createEmptyModel name cat lang modelDir = do
     Env{..} <- ask
     createDir modelDir
     createDir $ modelDir </> modelSrc
     createDir $ modelDir </> modelExec
-    let name = dropTrailingPathSeparator $ toFilePath modelDir
-        conf = emptyModelConfig name cat lang
+    let conf = emptyModelConfig name cat lang
     liftIO $ B.writeFile (toFilePath $ modelDir </> modelConfig) conf
 
 copyModel :: (MonadIO m, MonadThrow m, MonadCatch m, MonadReader Env m)
