@@ -39,10 +39,52 @@ rename :: (MonadIO m, MonadThrow m, MonadCatch m, MonadLogger m, MonadReader Env
 rename RenameTemplate{..} = do
     old <- getTemplatePath oldTemplateName
     new <- getTemplatePath newTemplateName
+    let msg = T.concat [ "Rename template from \""
+                       , prettyTemplateName old
+                       , "\" to \""
+                       , prettyTemplateName new
+                       , "\" (yes/no)?"
+                       ]
 
-    copyProjectConfig old new
-    deleteTemplate old
-rename opts = liftIO $ print opts
+    userConfirm (logInfoN msg)
+                (do copyProjectConfig old new
+                    deleteTemplate old)
+rename RenameModel{..} = do
+    src <- getModelPath oldModelName oldModelCat
+    dst <- getModelPath newModelName newModelCat
+    checkModelConfigExist src
+    whenFileExists dst $ throwM $ ModelAlreadyExists (parent dst)
 
+    paths <- getTemplatesList
+    ts <- getDependentTemplates oldModelName oldModelCat paths
+    case (null ts, updateFlag) of
+        (True, _) -> do
+            let msg = T.concat [ "Rename model from \""
+                               , prettyName oldModelName oldModelCat
+                               , "\" to \""
+                               , prettyName newModelName newModelCat
+                               , "\" (yes/no)? "
+                               ]
+            userConfirm (logInfoN msg)
+                        (do copyModel (parent src) (parent dst)
+                            deleteModel src)
+        (False, False) ->
+            throwM $ ExistingDependence (prettyName oldModelName oldModelCat) ts
+        (False, True) -> do
+            let msg = T.concat [ "Rename model from \""
+                               , prettyName oldModelName oldModelCat
+                               , "\" to \""
+                               , prettyName newModelName newModelCat
+                               , "\nAnd update templates:\n"
+                               , prettyTemplatesList ts
+                               , "\n(yes/no)? "
+                               ]
 
+            userConfirm (logWarnN msg)
+                        (do mapM_ (updateModel oldModelName
+                                               oldModelCat
+                                               newModelName
+                                               newModelCat) ts
+                            copyModel (parent src) (parent dst)
+                            deleteModel src)
 

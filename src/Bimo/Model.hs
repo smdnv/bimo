@@ -4,6 +4,7 @@
 
 module Bimo.Model
     ( prettyName
+    , checkModelConfigExist
     , readModelConfig
     , showModelConfig
     , createEmptyModel
@@ -38,11 +39,14 @@ prettyName n c =
         cat  = fromString c
      in cat `mappend` "/" `mappend` name
 
+checkModelConfigExist :: (MonadIO m, MonadThrow m) => Path Abs File -> m ()
+checkModelConfigExist p = unlessFileExists p $ throwM $ NotFoundModelConfig p
+
 readModelConfig :: (MonadIO m, MonadThrow m)
                 => Path Abs File
                 -> m Model
 readModelConfig p = do
-    unlessFileExists p $ throwM $ NotFoundModelConfig p
+    checkModelConfigExist p
     readYamlConfig p
 
 showModelConfig :: (MonadIO m, MonadThrow m, MonadReader Env m)
@@ -61,10 +65,7 @@ getModelPath n c = do
     mConf <- asks modelConfig
     name <- parseRelDir n
     cat <- parseRelDir c
-    let path = mDir </> cat </> name </> mConf
-
-    unlessFileExists path $ throwM $ NotFoundModelConfig path
-    return path
+    return $  mDir </> cat </> name </> mConf
 
 createEmptyModel :: (MonadIO m, MonadThrow m, MonadReader Env m)
                  => Maybe String
@@ -89,11 +90,9 @@ copyModel src dst = do
     copyDirRecur src dst
 
 deleteModel :: (MonadIO m, MonadThrow m, MonadCatch m, MonadReader Env m)
-            => String
-            -> String
+            => Path Abs File
             -> m ()
-deleteModel n c =
-    getModelPath n c >>= removeDirRecur . parent
+deleteModel = removeDirRecur . parent
 
 getModelLibPath :: (MonadIO m, MonadThrow m, MonadReader Env m)
              => Path Abs Dir

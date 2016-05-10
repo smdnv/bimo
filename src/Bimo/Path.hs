@@ -38,3 +38,21 @@ unlessFileExists :: MonadIO m
 unlessFileExists path action = do
     exists <- doesFileExist path
     unless exists action
+
+userConfirm :: (MonadIO m, MonadThrow m) => m () -> m () -> m ()
+userConfirm log yes = do
+    log
+    line <- liftIO getLine
+    case line of
+        "yes"   -> yes
+        "no"    -> liftIO $ putStrLn "Cancel command"
+        invalid -> throwM $ AbortCommand invalid
+
+data RenameException
+    = AbortCommand !String
+
+instance Exception RenameException
+
+instance Show RenameException where
+    show (AbortCommand input) =
+        "Abort command, invalid input: " ++ show input

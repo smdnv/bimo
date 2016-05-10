@@ -40,28 +40,25 @@ delete' :: (MonadIO m, MonadThrow m, MonadCatch m, MonadLogger m, MonadReader En
 delete' (DeleteModel n c f) = do
     paths <- getTemplatesList
     ts <- getDependentTemplates n c paths
-    if null ts
-        then userConfirm (logInfoN $ deleteModelNormalMsg n c)
-                         (deleteModel n c)
-        else
-            case f of
-                Normal -> throwM $
-                    ExistingDependence (prettyName n c) ts
-                Force -> userConfirm (logWarnN $ deleteModelForceMsg n c ts)
-                                     (deleteModel n c)
-  where
-    deleteModelNormalMsg n c =
-        T.concat [ "Delete model: "
-                 , prettyName n c
-                 , "? (yes/no)"
-                 ]
-    deleteModelForceMsg n c ts =
-        T.concat [ "Delete model: "
-                 , prettyName n c
-                 , "\nDependent templates, break if delete model\n"
-                 , prettyTemplatesList ts
-                 , "\nAnyway delete? (yes/no):"
-                 ]
+    case (null ts, f) of
+        (True, _) -> do
+            let msg = T.concat [ "Delete model: "
+                               , prettyName n c
+                               , "? (yes/no)"
+                               ]
+            userConfirm (logInfoN msg)
+                        (getModelPath n c >>= deleteModel)
+        (False, Normal) ->
+            throwM $ ExistingDependence (prettyName n c) ts
+        (False, Force) -> do
+            let msg = T.concat [ "Delete model: "
+                               , prettyName n c
+                               , "\nDependent templates, break if delete model\n"
+                               , prettyTemplatesList ts
+                               , "\nAnyway delete? (yes/no):"
+                               ]
+            userConfirm (logWarnN msg)
+                        (getModelPath n c >>= deleteModel)
 
 delete' (DeleteTemplate t f) = do
     tPath <- getTemplatePath t
@@ -79,12 +76,12 @@ delete' (DeleteTemplate t f) = do
                     case f' of
                         Skip ->
                             userConfirm (logInfoN $ deleteTempSkipMsg s d t)
-                                        (do mapM_ (\(n, c, _) -> deleteModel n c) d
+                                        (do mapM_ (\(n, c, _) -> getModelPath n c >>= deleteModel) d
                                             deleteTemplate tPath)
                         Force -> do
                             let ts = d ++ s
                             userConfirm (logWarnN $ deleteTempForceMsg s d t)
-                                        (do mapM_ (\(n, c, _) -> deleteModel n c) ts
+                                        (do mapM_ (\(n, c, _) -> getModelPath n c >>= deleteModel) ts
                                             deleteTemplate tPath)
   where
     deleteTempNormalMsg t =
@@ -124,25 +121,3 @@ delete' (DeleteTemplate t f) = do
         return $ if null templates
              then ((n, c, templates):toDelete, toSkip)
              else (toDelete, (n, c, templates):toSkip)
-
-userConfirm :: (MonadIO m, MonadThrow m) => m () -> m () -> m ()
-userConfirm log yes = do
-    log
-    line <- liftIO getLine
-    case line of
-        "yes"   -> yes
-        "no"    -> liftIO $ putStrLn "Cancel command"
-        invalid -> throwM $ AbortCommand invalid
-
-data DeleteException
-    = ExistingDependence !String ![Path Abs File]
-    | AbortCommand !String
-
-instance Exception DeleteException
-
-instance Show DeleteException where
-    show (ExistingDependence model paths) =
-        "Existing dependence with: " ++ show paths
-    show (AbortCommand input) =
-        "Abort command, invalid input: " ++ show input
-

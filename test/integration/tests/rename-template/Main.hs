@@ -17,11 +17,12 @@ main = do
     bimo ["add", "-t", "new-template2"]
 
     -- Fail when new name already exists
-    bimoFailStderrContent ["rename", "-t", "new-template1", "-T", "new-template2"]
-                          ["Template with this name already exists"]
+    bimoFailStderrContent' ["rename", "-t", "new-template1", "-T", "new-template2"]
+                           ["Template with this name already exists"]
+                           "yes"
 
     -- Successful rename template
-    bimo ["rename", "-t", "new-template1", "-T", "new-template3"]
+    bimo' ["rename", "-t", "new-template1", "-T", "new-template3"] "yes"
     bimo ["show", "-t", "new-template3"]
     bimoFail ["show", "-t", "new-template1"]
 

@@ -4,7 +4,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Bimo.Project
-    ( prettyTemplatesList
+    ( prettyTemplateName
+    , prettyTemplatesList
     , checkProjectConfigExist
     , readProjectConfig
     , writeProjectConfig
@@ -13,6 +14,8 @@ module Bimo.Project
     , createEmptyProject
     , copyProjectConfig
     , deleteTemplate
+    , updateModel
+    , updateProjectWith
     , getTemplatePath
     , getTemplatesList
     , getDependentTemplates
@@ -44,6 +47,10 @@ import Bimo.Types.Config.Model
 import Bimo.Config
 import Bimo.Model
 import Bimo.Path
+
+prettyTemplateName :: (Monoid a, IsString a) => Path Abs File -> a
+prettyTemplateName =
+    fromString . dropTrailingPathSeparator . fromRelDir . dirname . parent
 
 prettyTemplatesList :: (Monoid a, IsString a) => [Path Abs File] -> a
 prettyTemplatesList ts =
@@ -113,14 +120,15 @@ getDependentTemplates :: (MonadIO m, MonadThrow m, MonadReader Env m)
                       -> String
                       -> [Path Abs File]
                       -> m [Path Abs File]
-getDependentTemplates n c paths = do
-    getModelPath n c
-    filterM func paths
+getDependentTemplates n c templates = do
+    p <- getModelPath n c
+    checkModelConfigExist p
+    filterM dependOn templates
   where
-    func path = do
-        Project{..} <- readProjectConfig path
+    dependOn template = do
+        Project{..} <- readProjectConfig template
         case libModels of
-            Nothing -> throwM $ NoLibModelsInConfig path
+            Nothing -> throwM $ NoLibModelsInConfig template
             Just models -> do
                 let model = LibModel n c []
                 return (model `elem` models)
@@ -142,6 +150,38 @@ deleteTemplate t = do
     checkProjectConfigExist t
     removeFile t
     removeDir $ parent t
+
+updateModel :: (MonadIO m, MonadThrow m, MonadReader Env m)
+            => String
+            -> String
+            -> String
+            -> String
+            -> Path Abs File
+            -> m ()
+updateModel oldN oldC newN newC =
+    updateProjectWith updateModel'
+  where
+    updateModel' Project{..} =
+        let model = LibModel oldN oldC []
+         in case libModels of
+                Nothing -> Nothing
+                Just models ->
+                    case find (== model) models of
+                        Nothing -> Nothing
+                        Just m@(LibModel _ _ args) ->
+                            let models' = LibModel newN newC args : delete m models
+                             in return $ Project userModels (Just models') topology
+
+updateProjectWith :: (MonadIO m, MonadThrow m, MonadReader Env m)
+                  => (Project -> Maybe Project)
+                  -> Path Abs File
+                  -> m ()
+updateProjectWith update p = do
+    conf <- readProjectConfig p
+    case update conf of
+        Nothing -> throwM $ FailedUpdateProjectConfig p
+        Just conf' -> writeProjectConfig p conf'
+
 
 unpackProject :: (MonadIO m, MonadThrow m, MonadCatch m, MonadReader Env m)
               => String
@@ -274,6 +314,8 @@ data ProjectException
     | NotFoundModelInConfig !String
     | NoLibModelsInConfig !(Path Abs File)
     | NoUserModelsInConfig !(Path Abs File)
+    | FailedUpdateProjectConfig !(Path Abs File)
+    | ExistingDependence !String ![Path Abs File]
 
 instance Exception ProjectException
 
@@ -290,6 +332,10 @@ instance Show ProjectException where
         "Not found any lib model in config: " ++ show path
     show (NoUserModelsInConfig path) =
         "Not found any user model in config: " ++ show path
+    show (FailedUpdateProjectConfig path) =
+        "Failed update project config: " ++ show path
+    show (ExistingDependence model templates) =
+        "Existing dependence with: " ++ show templates
 
 
 
