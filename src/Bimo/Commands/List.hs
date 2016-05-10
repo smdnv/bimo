@@ -8,6 +8,8 @@ module Bimo.Commands.List
     , list
     ) where
 
+import qualified Data.Text as T
+import Data.Monoid
 import Control.Monad
 import Control.Monad.Reader
 import Control.Monad.Logger
@@ -15,11 +17,11 @@ import Control.Monad.Catch
 import Control.Monad.IO.Class
 import Path
 import Path.IO
+import System.FilePath (dropTrailingPathSeparator)
 
 import Bimo.Types.Env
-import Bimo.Types.Config.Model
 
-import Bimo.Config
+import Bimo.Project
 
 data ListOpts
     = ListModels
@@ -31,21 +33,24 @@ list :: (MonadIO m, MonadThrow m, MonadLogger m, MonadReader Env m)
      -> m ()
 list ListModels = do
     mDir <- asks modelsDir
-    files <- listDir mDir
-    let categories = fst files
+    content <- listDir mDir
+    let categories = fst content
 
-    liftIO $ mapM_ prettyPrint categories
+    pairs <- mapM (\cat -> do
+        catContent <- liftM fst $ listDir cat
+        return (toText cat, map toText catContent)) categories
+
+    let msg = "Available models:\n" <> T.concat (map prettyPair pairs)
+    logInfoN msg
   where
-    prettyPrint category = do
-        print category
-        files <- listDir category
-        mapM_ (\m -> putStrLn $ "  - " ++ show m) $ fst files
+    toText = T.pack . dropTrailingPathSeparator . fromRelDir . dirname
+    prettyPair (cat, models) =
+        cat <> ":\n" <> T.concat (map (\m -> " - " <>  m <> "\n") models)
+
 
 list ListTemplates = do
-    tempDir <- asks templatesDir
-    files <- listDir tempDir
-    let ts = fst files
-
-    liftIO $ mapM_ print ts
-
+    templates <- getTemplatesList
+    logInfoN $ T.concat [ "Available templates:\n"
+                        , prettyTemplatesList templates
+                        ]
 

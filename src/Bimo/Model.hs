@@ -92,7 +92,12 @@ copyModel src dst = do
 deleteModel :: (MonadIO m, MonadThrow m, MonadCatch m, MonadReader Env m)
             => Path Abs File
             -> m ()
-deleteModel = removeDirRecur . parent
+deleteModel p = do
+    let dir = parent p
+        cat = parent dir
+    removeDirRecur dir
+    (ds, fs) <- listDir cat
+    when (null ds && null fs) $ removeDir cat
 
 getModelLibPath :: (MonadIO m, MonadThrow m, MonadReader Env m)
              => Path Abs Dir

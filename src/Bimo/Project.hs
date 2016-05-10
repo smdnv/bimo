@@ -53,10 +53,8 @@ prettyTemplateName =
     fromString . dropTrailingPathSeparator . fromRelDir . dirname . parent
 
 prettyTemplatesList :: (Monoid a, IsString a) => [Path Abs File] -> a
-prettyTemplatesList ts =
-    foldl' mappend mempty $ map func ts
-  where
-    func = fromString . dropTrailingPathSeparator . fromRelDir . dirname . parent
+prettyTemplatesList =
+    foldl' (\acc t -> acc `mappend` prettyTemplateName t `mappend` "\n") mempty
 
 checkProjectConfigExist :: (MonadIO m, MonadThrow m) => Path Abs File -> m ()
 checkProjectConfigExist p = unlessFileExists p $ throwM $ NotFoundProjectConfig p
@@ -108,7 +106,7 @@ getTemplatePath temp = do
     return $ tDir </> template </> pConf
 
 getTemplatesList :: (MonadIO m, MonadThrow m, MonadReader Env m)
-                => m [Path Abs File]
+                 => m [Path Abs File]
 getTemplatesList = do
     tDir <- asks templatesDir
     pConf <- asks projectConfig
@@ -335,7 +333,7 @@ instance Show ProjectException where
     show (FailedUpdateProjectConfig path) =
         "Failed update project config: " ++ show path
     show (ExistingDependence model templates) =
-        "Existing dependence with: " ++ show templates
+        "Existing dependence with templates: \n" ++ prettyTemplatesList templates
 
 
 
