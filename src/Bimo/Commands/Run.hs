@@ -7,13 +7,18 @@ module Bimo.Commands.Run
     ( run
     ) where
 
+import qualified Data.Text as T
 import qualified Data.Map as M
 import Data.List
+import Data.Monoid
+import Data.Bits ((.|.))
 import Control.Monad
 import Control.Monad.Reader
 import Control.Monad.Logger
 import Control.Monad.Catch
 import Control.Monad.IO.Class
+import Control.Monad.Trans.Control
+import Control.Concurrent.Async.Lifted
 import Path
 import Path.IO
 import System.Process
@@ -29,7 +34,7 @@ import Bimo.Model
 import Bimo.Config
 import Bimo.Project
 
-run :: (MonadIO m, MonadThrow m, MonadMask m, MonadLogger m, MonadReader Env m)
+run :: (MonadIO m, MonadThrow m, MonadMask m, MonadLogger m, MonadReader Env m, MonadBaseControl IO m)
     => m ()
 run = do
     pConf  <- asks projectConfig
@@ -42,18 +47,22 @@ run = do
         pipes <- mapM (\p -> do
             pipe <- parseRelFile p
             return $ fromAbsFile $ tmpDir </> pipe ) $ topologyToPipes $ topology p
-        let procs = modelsToProcs (fromAbsDir tmpDir) models
+        let procs = modelsToProcs tmpDir models
 
-        createPipes pipes
-        handles <- runProcs procs
-        exitCodes <- waitProcs handles
-        mapM_ processExitCodes $ M.toList exitCodes
+        bracketOnError (createPipes pipes >> runProcs procs)
+                       terminate
+                       (mapConcurrently waitProc >=> \_ -> return ())
         )
   where
-      createPipes pipes = liftIO $ mapM_ (`createNamedPipe` namedPipeMode) pipes
-      processExitCodes (k, ec)  = unless (ec == ExitSuccess) (error "model fails")
+      createPipes pipes = liftIO $
+          mapM_ (`createNamedPipe` (namedPipeMode .|. 0o666)) pipes
+      terminate ps = do
+        logWarnN "Terminate models"
+        mapM_ (\(n, ph) -> do liftIO $ terminateProcess ph
+                              logWarnN $ "Kill model: " <> n) ps
 
-modelsToProcs :: FilePath
+
+modelsToProcs :: Path Abs Dir
               -> M.Map String ModelEntity
               -> M.Map String CreateProcess
 modelsToProcs dir = M.map func
@@ -63,26 +72,33 @@ modelsToProcs dir = M.map func
                                 , intercalate ":" pipesToWrite
                                 ] ++ execArgs
          in p { delegate_ctlc = True
-              , cwd = Just dir
+              , cwd = Just $ fromAbsDir dir
               }
 
-runProcs :: (MonadIO m, MonadThrow m, MonadMask m, MonadLogger m, MonadReader Env m)
+runProcs :: (MonadIO m, MonadThrow m, MonadMask m, MonadLogger m)
          => M.Map String CreateProcess
-         -> m (M.Map String ProcessHandle)
-runProcs = M.foldlWithKey func (return M.empty)
+         -> m [(T.Text, ProcessHandle)]
+runProcs = mapM func . M.toList
   where
-    func acc k p = do
-        acc' <- acc
+    func (n, p) = do
+        let name = T.pack n
         (_, _, _, ph) <- liftIO $ createProcess p
-        logInfoN $ "Run model: "
-        return $ M.insert k ph acc'
+        logInfoN $ "Start model: " <> name
+        return (name,  ph)
 
-waitProcs :: (MonadIO m, MonadThrow m, MonadMask m, MonadLogger m, MonadReader Env m)
-         => M.Map String ProcessHandle
-         -> m (M.Map String ExitCode)
-waitProcs = M.foldlWithKey func (return M.empty)
-  where
-    func acc k ph = do
-        acc' <- acc
-        ec <- liftIO $ waitForProcess ph
-        return $ M.insert k ec acc'
+waitProc :: (MonadIO m, MonadThrow m, MonadMask m, MonadLogger m, MonadBaseControl IO m)
+         => (T.Text, ProcessHandle)
+         -> m ()
+waitProc (n, ph) = do
+    ec <- liftIO $ waitForProcess ph
+    unless (ec == ExitSuccess) $ throwM $ ModelFailure n
+    logInfoN $ "Finish model: " <> n
+
+data RunException
+    = ModelFailure T.Text
+
+instance Exception RunException
+
+instance Show RunException where
+    show (ModelFailure name) =
+        "Model failure: " ++ show name

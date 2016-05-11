@@ -51,6 +51,8 @@ library
                      , path-io
                      , filepath
                      , unix
+                     , monad-control
+                     , lifted-async
   default-language:    Haskell2010
 
 executable bimo
