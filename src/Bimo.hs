@@ -1,16 +1,20 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Bimo
     (bimo)
     where
 
-import Options.Applicative
+import Options.Applicative (execParser)
+import qualified Data.ByteString.Char8 as S8
 import Control.Monad.Reader
 import Control.Monad.Logger
 import Path
 import Path.IO
 import System.Environment
+import System.Console.ANSI
+import System.Log.FastLogger (fromLogStr)
 
 import Bimo.Types.Env
 import Bimo.Commands
@@ -26,8 +30,13 @@ import Bimo.Commands.Show
 
 bimo :: IO ()
 bimo = do
-    -- appDataDir <- getAppUserDataDir "bimo"
-    appDataDir <- getEnv "BIMO_DATA" >>= parseAbsDir
+    dataDir <- getEnv "BIMO_DATA" >>= parseAbsDir
+    args    <- execParser parser
+    -- runStdoutLoggingT $ runReaderT (action args) (env dataDir)
+    runLoggingT (runReaderT (action args) (env dataDir)) colorizedLog
+
+env :: Path Abs Dir -> Env
+env appDataDir =
     let appDir           = appDataDir
         projectConfig    = $(mkRelFile "config.yaml")
         projectModelsDir = $(mkRelDir "models")
@@ -39,21 +48,53 @@ bimo = do
         buildScriptsDir  = appDataDir </> $(mkRelDir "buildscripts")
         libsDir          = appDataDir </> $(mkRelDir "libs")
         runDir           = "bimo_run"
-        env              = Env{..}
+     in Env{..}
 
-    args <- execParser parser
-    let action :: ReaderT Env (LoggingT IO) () = case args of
-            New    opts -> new opts
-            Build  opts -> build opts
-            Run         -> run
-            Add    opts -> add opts
-            Delete opts -> delete' opts
-            Rename opts -> rename opts
-            Unpack opts -> unpack opts
-            List   opts -> list opts
-            Show   opts -> show' opts
-            _           -> fail "no command"
+action :: Command -> ReaderT Env (LoggingT IO) ()
+action args =
+    case args of
+        New    opts -> new opts
+        Build  opts -> build opts
+        Run         -> run
+        Add    opts -> add opts
+        Delete opts -> delete' opts
+        Rename opts -> rename opts
+        Unpack opts -> unpack opts
+        List   opts -> list opts
+        Show   opts -> show' opts
+        _           -> fail "no command"
 
-    runStdoutLoggingT $ runReaderT action env
+colorizedLog :: Loc -> LogSource -> LogLevel -> LogStr -> IO ()
+colorizedLog loc src level msg = do
+    let log = S8.concat [ "["
+                        , colorizedLevel level
+                        , "] "
+                        , fromLogStr msg
+                        ]
+    S8.putStrLn log
+  where
+    colorizedLevel lev =
+        let l = S8.pack $ drop 5 $ show lev
+         in case lev of
+                LevelInfo -> infoColor l
+                LevelWarn -> warnColor l
+                LevelError -> errorColor l
+                _ -> l
+    infoColor bs =
+        S8.concat [ S8.pack $ setSGRCode [SetColor Foreground Dull Green]
+                  , bs
+                  , S8.pack $ setSGRCode []
+                  ]
+    warnColor bs =
+        S8.concat [ S8.pack $ setSGRCode [SetColor Foreground Dull Yellow]
+                  , bs
+                  , S8.pack $ setSGRCode []
+                  ]
+    errorColor bs =
+        S8.concat [ S8.pack $ setSGRCode [SetColor Foreground Dull Red]
+                  , bs
+                  , S8.pack $ setSGRCode []
+                  ]
+
 
 
