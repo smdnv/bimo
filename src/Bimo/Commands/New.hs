@@ -1,5 +1,6 @@
 {-# LANGUAGE RecordWildCards  #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 -- | Create new project
 
@@ -57,28 +58,4 @@ new NewProject{..} =
             Just (TemplateOpts temp True) -> do
                 createProjectDirs root
                 unpackProject temp root
-
-withDir :: (MonadIO m, MonadThrow m, MonadCatch m, MonadLogger m, MonadReader Env m)
-        => String
-        -> (Path Abs Dir -> m ())
-        -> m ()
-withDir dir action = do
-    dir'   <- parseRelDir dir
-    curDir <- getCurrentDir
-    let root = curDir </> dir'
-    whenDirExists root $ throwM $ DirAlreadyExists root
-    action root
-
-data NewException
-    = DirAlreadyExists !(Path Abs Dir)
-    | NotProvidedTemplate
-
-instance Exception NewException
-
-instance Show NewException where
-    show (DirAlreadyExists path) =
-        "Directory already exists: " ++ show path
-    show NotProvidedTemplate =
-        "Not provided template to unpack"
-
 

@@ -20,6 +20,7 @@ import Bimo.Types.Env
 import Bimo.Types.Config.Model
 
 import Bimo.Model
+import Bimo.Path
 
 data UnpackOpts = UnpackOpts
     { modelCat :: !String
@@ -31,24 +32,10 @@ unpack :: (MonadIO m, MonadThrow m, MonadCatch m, MonadLogger m, MonadReader Env
      -> m ()
 unpack UnpackOpts{..} = do
     mDir <- asks modelsDir
-    curDir <- getCurrentDir
     dir <- parseRelDir modelName
     cat <- parseRelDir modelCat
     let srcDir = mDir </> cat </> dir
 
-    exists <- doesDirExist dir
-    when exists $ throwM $ DirAlreadyExists dir
-
-    copyModel srcDir $ curDir </> dir
-
-
-data UnpackException
-    = DirAlreadyExists !(Path Rel Dir)
-
-instance Exception UnpackException
-
-instance Show UnpackException where
-    show (DirAlreadyExists path) =
-        "Directory already exists: " ++ show path
+    withDir modelName $ \root -> copyModel srcDir root
 
 

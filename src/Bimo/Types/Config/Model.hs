@@ -24,13 +24,14 @@ import Data.Yaml
 import Data.Yaml.Pretty
 import qualified Data.ByteString as B
 import Data.Aeson.Encode.Pretty (keyOrder)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, isNothing)
+import Control.Monad (when)
 
 data Model = Model
     { modelName       :: !String
     , category        :: !String
     , descr           :: !String
-    , language        :: !String
+    , language        :: !(Maybe String)
     , srcFiles        :: !(Maybe [String])
     , libs            :: !(Maybe [String])
     , userBuildScript :: !(Maybe String)
@@ -41,10 +42,12 @@ instance FromJSON Model where
     modelName       <- v .: "name"
     category        <- v .: "category"
     descr           <- v .: "descr"
-    language        <- v .: "language"
+    language        <- v .:? "language"
     srcFiles        <- v .:? "source"
     libs            <- v .:? "libs"
     userBuildScript <- v .:? "user-build-script"
+    when (isNothing language && isNothing userBuildScript)
+         (error "Not present language or user-build-script")
     return Model{..}
 
 instance ToJSON Model where
@@ -72,8 +75,7 @@ emptyModelConfig name category language =
                      , "user-build-script"
                      ]
         cat   = fromMaybe "none" category
-        lang  = fromMaybe "" language
         descr = "model description there"
         conf  = setConfCompare o defConfig
-        model = Model name cat descr lang Nothing Nothing Nothing
+        model = Model name cat descr language Nothing Nothing Nothing
      in encodePretty conf model

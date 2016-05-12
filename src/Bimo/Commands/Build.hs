@@ -57,10 +57,18 @@ build BuildModel = do
     name        <- parseRelFile modelName
     execDir     <- asks modelExec
     srcDir      <- asks modelSrc
-    buildScript <- maybe (getBuildScript language)
-                         (parseRelFile >=> return . (</>) curDir) userBuildScript
-    libPaths    <- maybe (return Nothing)
-                         (getLibPaths language >=> return . Just) libs
+
+    buildScript <- case (language, userBuildScript) of
+        (_, Just script) -> do path <- parseRelFile script
+                               return $ curDir </> path
+        (Just lang, Nothing) -> getBuildScript lang
+
+    libPaths    <- case (language, libs) of
+        (Nothing, Just _) -> return libs
+        (Just lang, Just libs') -> do paths <- getLibPaths lang libs'
+                                      return $ Just paths
+        (_, _) -> return Nothing
+
     files       <- maybe (return Nothing)
                          (mapM (\p -> do path <- parseRelFile p
                                          return $ srcDir </> path)
@@ -92,7 +100,7 @@ build BuildModel = do
                 Nothing -> []
                 Just libs' ->
                     [ "-l"
-                    , foldl' (++) "" $ intersperse ":" (map fromAbsDir libs')
+                    , foldl' (++) "" $ intersperse ":" libs'
                     ]
             args = srcFlag ++ dstFlag ++ libFlag
             p = proc (fromAbsFile script) args

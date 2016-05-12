@@ -1,8 +1,10 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- | Path helpers
 module Bimo.Path where
 
 import Control.Monad
 import Control.Monad.Catch
+import Control.Monad.Logger
 import Control.Monad.IO.Class
 import Path
 import Path.IO
@@ -48,11 +50,33 @@ userConfirm log yes = do
         "no"    -> liftIO $ putStrLn "Cancel command"
         invalid -> throwM $ AbortCommand invalid
 
-data RenameException
+withDir :: (MonadIO m, MonadThrow m, MonadCatch m, MonadLogger m)
+        => String
+        -> (Path Abs Dir -> m ())
+        -> m ()
+withDir dir action = do
+    dir'   <- parseRelDir dir
+    curDir <- getCurrentDir
+    let root = curDir </> dir'
+    whenDirExists root $ throwM $ DirAlreadyExists root
+    onException (action root)
+                (do logWarnN "Abort command"
+                    whenDirExists root $ removeDirRecur root)
+
+data PathException
+    = DirAlreadyExists !(Path Abs Dir)
+
+instance Exception PathException
+
+instance Show PathException where
+    show (DirAlreadyExists path) =
+        "Directory already exists: " ++ show path
+
+data UserConfirmException
     = AbortCommand !String
 
-instance Exception RenameException
+instance Exception UserConfirmException
 
-instance Show RenameException where
+instance Show UserConfirmException where
     show (AbortCommand input) =
         "Abort command, invalid input: " ++ show input

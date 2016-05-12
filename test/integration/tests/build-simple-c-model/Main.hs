@@ -8,7 +8,13 @@ main = do
     renameFile "model.yaml" "hide-model.yaml"
     bimoFailStderrContent ["build", "-m"] ["Not found model config"]
 
+    -- Fail when not present lang or user build script
+    renameFile "invalid-model.yaml" "model.yaml"
+    bimoFailStderrContent ["build", "-m"]
+                          ["Not present language or user-build-script"]
+
     -- Fail when build model
+    renameFile "model.yaml" "invalid-model.yaml"
     renameFile "hide-model.yaml" "model.yaml"
     renameFile "src/simple-model.c" "src/hide-simple-model.c"
     bimoFailStderrContent ["build", "-m"] ["Failure when build model"]

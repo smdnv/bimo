@@ -1,0 +1,5 @@
+name: simple-model
+category: none
+descr: model description there
+source:
+- simple-model.c
