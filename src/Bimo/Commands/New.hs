@@ -10,6 +10,7 @@ module Bimo.Commands.New
     , new
     ) where
 
+import qualified Data.Text as T
 import Control.Monad.Reader
 import Control.Monad.Logger
 import Control.Monad.Catch
@@ -44,9 +45,18 @@ new :: (MonadIO m, MonadThrow m, MonadCatch m, MonadLogger m, MonadReader Env m)
     => NewOpts
     -> m ()
 new NewModel{..} =
-    withDir modelName $ \root -> createEmptyModel modelName modelCat modelLang root
+    withDir modelName $ \root -> do
+        logInfoN $ T.concat [ "Create new model \""
+                            , T.pack modelName
+                            , "\""
+                            ]
+        createEmptyModel modelName modelCat modelLang root
 new NewProject{..} =
     withDir projectName $ \root ->
+        logInfoN $ T.concat [ "Create new project\""
+                            , T.pack projectName
+                            , "\""
+                            ]
         case templateOpts of
             Nothing -> createEmptyProject root
             Just (TemplateOpts temp False) -> do

@@ -8,6 +8,7 @@ module Bimo.Commands.Build
     , build
     ) where
 
+import qualified Data.Text as T
 import Data.List
 import Control.Monad
 import Control.Monad.Reader
@@ -40,6 +41,8 @@ build BuildProject = do
     curDir <- getCurrentDir
     p@Project{..} <- readProjectConfig $ curDir </> pConf
     modelsDir <- asks projectModelsDir
+
+    logInfoN "Build project"
 
     maybe (return ()) (buildModels modelsDir) userModels
   where
@@ -76,8 +79,15 @@ build BuildModel = do
 
     let execFile = execDir </> name
 
+    logInfoN $ T.concat [ "Build model \""
+                        , T.pack modelName
+                        , "\""
+                        ]
+
     require <- maybe (return True) (`requireBuild` execFile) files
-    when require $ build' buildScript files execFile libPaths
+    if require
+        then build' buildScript files execFile libPaths
+        else logInfoN "Nothing to build"
   where
     requireBuild src dst = do
         exists <- doesFileExist dst
@@ -87,7 +97,8 @@ build BuildModel = do
                     return $ dstTime <= maximum times
             else return True
     build' script src dst libs = do
-        let srcFlag = case src of
+        let script' = fromAbsFile script
+            srcFlag = case src of
                 Nothing -> []
                 Just src' ->
                     [ "-s"
@@ -103,9 +114,14 @@ build BuildModel = do
                     , foldl' (++) "" $ intersperse ":" libs'
                     ]
             args = srcFlag ++ dstFlag ++ libFlag
-            p = proc (fromAbsFile script) args
+            p = proc script' args
 
-        liftIO $ mapM_ print args
+        logInfoN $ T.concat [ "build script: "
+                            , T.pack script'
+                            , "\nBuild args:\n"
+                            -- , T.intercalate "\n" $ map T.pack args
+                            , T.pack $ show args
+                            ]
 
         (ec, out, err) <- liftIO $ readCreateProcessWithExitCode p ""
         unless (ec == ExitSuccess) $ throwM $ ModelBuildFailure dst out err
