@@ -25,6 +25,7 @@ module Bimo.Project
     , ProjectException(..)
     ) where
 
+import Data.Monoid
 import Data.Yaml
 import Data.String
 import qualified Data.Map as M
@@ -74,11 +75,15 @@ writeProjectConfig path conf = do
     let b = encodeProjectConfig conf
     liftIO $ B.writeFile (toFilePath path) b
 
-showProjectConfig :: (MonadIO m, MonadThrow m, MonadReader Env m)
+showProjectConfig :: (MonadIO m, MonadThrow m, MonadReader Env m, MonadLogger m)
                    => String
                    -> m ()
-showProjectConfig t =
-    getTemplatePath t >>= readProjectConfig >>= liftIO . print
+showProjectConfig t = do
+    path <- getTemplatePath t
+    colorized <- colorizedConfig $ fromAbsFile path
+
+    logInfoN $ "Project config\n" <> colorized
+
 
 createProjectDirs :: (MonadIO m, MonadThrow m, MonadReader Env m)
                   => Path Abs Dir

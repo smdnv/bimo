@@ -71,7 +71,7 @@ colorizedLog loc src level msg = do
                         , "] "
                         , fromLogStr msg
                         ]
-    S8.putStrLn log
+    S8.putStr log
   where
     colorizedLevel lev =
         let l = S8.pack $ drop 5 $ show lev

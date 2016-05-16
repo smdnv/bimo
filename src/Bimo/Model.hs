@@ -15,7 +15,9 @@ module Bimo.Model
     , ModelException(..)
     ) where
 
+import qualified Data.Text.IO as T
 import Data.Yaml
+import Data.Monoid
 import Data.String
 import qualified Data.ByteString as B
 import Control.Monad
@@ -49,12 +51,14 @@ readModelConfig p = do
     checkModelConfigExist p
     readYamlConfig p
 
-showModelConfig :: (MonadIO m, MonadThrow m, MonadReader Env m)
+showModelConfig :: (MonadIO m, MonadThrow m, MonadReader Env m, MonadLogger m)
                 => String
                 -> String
                 -> m ()
-showModelConfig n c =
-    getModelPath n c >>= readModelConfig >>= liftIO . print
+showModelConfig n c = do
+    path <- getModelPath n c
+    colorized <- colorizedConfig $ fromAbsFile path
+    logInfoN $ "Model config\n" <> colorized
 
 getModelPath :: (MonadIO m, MonadThrow m, MonadReader Env m)
              => String

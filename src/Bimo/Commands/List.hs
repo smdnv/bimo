@@ -48,7 +48,9 @@ list ListModels = do
   where
     toText = T.pack . dropTrailingPathSeparator . fromRelDir . dirname
     prettyPair (cat, models) =
-        cat <> ":\n" <> T.concat (map (\m -> " - " <>  m <> "\n") models)
+        "Category: " <> cat
+                     <> "\n"
+                     <> T.concat (map (\m -> " - " <>  m <> "\n") models)
 
 list ListTemplates = do
     templates <- getTemplatesList
