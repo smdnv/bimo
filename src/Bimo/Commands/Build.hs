@@ -28,9 +28,12 @@ import Bimo.Config
 import Bimo.Project
 import Bimo.Model
 
-data BuildOpts
-    = BuildProject
-    | BuildModel
+-- data BuildOpts
+--     = BuildProject
+--     | BuildModel
+--     deriving Show
+
+data BuildOpts = BuildProject | BuildModel
     deriving Show
 
 build :: (MonadIO m, MonadThrow m, MonadMask m, MonadLogger m, MonadReader Env m)

@@ -4,7 +4,7 @@ import System.Directory
 main :: IO ()
 main = do
     -- Add valid template
-    bimo ["build", "-p"]
+    bimo ["build"]
     bimo ["add", "-t", "new-template"]
 
     -- Create new project and run

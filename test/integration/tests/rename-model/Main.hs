@@ -9,11 +9,11 @@ main = do
 
     -- Successful add templates
     setCurrentDirectory prj1
-    bimo ["build", "-p"]
+    bimo ["build"]
     bimo ["add", "-t", "new-template1"]
 
     setCurrentDirectory prj2
-    bimo ["build", "-p"]
+    bimo ["build"]
     bimo ["add", "-t", "new-template2"]
 
     -- Fail when new name already exists

@@ -13,7 +13,7 @@ main = do
                           [ "Not found model exec" ]
 
     -- Successful add template
-    bimo ["build", "-p"]
+    bimo ["build"]
     bimo ["add", "-t", "new-template"]
     bimoStdoutContent ["list", "-t"] ["new-template"]
 
@@ -23,7 +23,7 @@ main = do
 
     -- Fail when template model already exists
     setCurrentDirectory prj2
-    bimo ["build", "-p"]
+    bimo ["build"]
     bimoFailStderrContent ["add", "-t", "new-template2"]
                           ["Model with this name already exists"]
 

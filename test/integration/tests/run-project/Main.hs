@@ -7,7 +7,7 @@ main = do
     -- Config with a missing model
     renameFile "invalid_config.yaml" "config.yaml"
 
-    bimo ["build", "-p"]
+    bimo ["build"]
     doesExist "models/model1/exec/model1"
     doesExist "models/model2/exec/model2"
 
@@ -20,5 +20,5 @@ main = do
     bimoFailStderrContent ["run"] ["Not found model exec"]
 
     -- Successful run
-    bimo ["build", "-p"]
+    bimo ["build"]
     bimo ["run"]

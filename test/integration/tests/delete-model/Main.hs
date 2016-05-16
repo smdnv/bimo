@@ -4,7 +4,7 @@ import System.Directory
 main :: IO ()
 main = do
     -- Add templates
-    bimo ["build", "-p"]
+    bimo ["build"]
     bimo ["add", "-t", "new-template1"]
 
     -- Delete model which is used in a template

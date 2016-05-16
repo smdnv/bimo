@@ -52,7 +52,7 @@ new NewModel{..} =
                             ]
         createEmptyModel modelName modelCat modelLang root
 new NewProject{..} =
-    withDir projectName $ \root ->
+    withDir projectName $ \root -> do
         logInfoN $ T.concat [ "Create new project\""
                             , T.pack projectName
                             , "\""

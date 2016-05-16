@@ -35,13 +35,16 @@ list ListModels = do
     mDir <- asks modelsDir
     content <- listDir mDir
     let categories = fst content
+        msg = "Available models:\n"
 
-    pairs <- mapM (\cat -> do
-        catContent <- liftM fst $ listDir cat
-        return (toText cat, map toText catContent)) categories
+    if null categories
+        then logInfoN $ msg <> "Empty"
+        else do
+            pairs <- mapM (\cat -> do
+                catContent <- liftM fst $ listDir cat
+                return (toText cat, map toText catContent)) categories
 
-    let msg = "Available models:\n" <> T.concat (map prettyPair pairs)
-    logInfoN msg
+            logInfoN $ msg <> T.concat (map prettyPair pairs)
   where
     toText = T.pack . dropTrailingPathSeparator . fromRelDir . dirname
     prettyPair (cat, models) =
@@ -49,7 +52,11 @@ list ListModels = do
 
 list ListTemplates = do
     templates <- getTemplatesList
-    logInfoN $ T.concat [ "Available templates:\n"
-                        , prettyTemplatesList templates
-                        ]
+    let msg = "Available templates:\n"
+
+    if null templates
+        then logInfoN $ msg <> "Empty"
+        else logInfoN $ T.concat [ "Available templates:\n"
+                                 , prettyTemplatesList templates
+                                 ]
 

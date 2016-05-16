@@ -64,9 +64,7 @@ run = pure Run
 build :: Parser Command
 build = Build <$> opts
   where
-    project = flag' BuildProject (short 'p' <> help "Build project")
-    model   = flag' BuildModel (short 'm' <> help "Build model")
-    opts    = project <|> model
+      opts = flag BuildProject BuildModel (short 'm' <> help "Build model")
 
 add :: Parser Command
 add = Add <$> opts
