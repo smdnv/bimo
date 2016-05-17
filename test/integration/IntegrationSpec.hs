@@ -71,6 +71,9 @@ main =
             describe "Unpack command tests" $ do
                 test "unpack-model" testEnv
 
+            describe "File logging" $ do
+                test "file-logging" testEnv
+
   where
     findExec s = do
         p <- findExecutable s

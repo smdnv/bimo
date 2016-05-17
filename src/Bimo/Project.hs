@@ -80,6 +80,7 @@ showProjectConfig :: (MonadIO m, MonadThrow m, MonadReader Env m, MonadLogger m)
                    -> m ()
 showProjectConfig t = do
     path <- getTemplatePath t
+    checkProjectConfigExist path
     colorized <- colorizedConfig $ fromAbsFile path
 
     logInfoN $ "Project config\n" <> colorized
@@ -133,7 +134,7 @@ getDependentTemplates n c templates = do
         case libModels of
             Nothing -> throwM $ NoLibModelsInConfig template
             Just models -> do
-                let model = LibModel n c []
+                let model = LibModel n c [] Nothing Nothing Nothing
                 return (model `elem` models)
 
 copyProjectConfig :: (MonadIO m, MonadThrow m, MonadReader Env m)
@@ -165,14 +166,15 @@ updateModel oldN oldC newN newC =
     updateProjectWith updateModel'
   where
     updateModel' Project{..} =
-        let model = LibModel oldN oldC []
+        let model = LibModel oldN oldC [] Nothing Nothing Nothing
          in case libModels of
                 Nothing -> Nothing
                 Just models ->
                     case find (== model) models of
                         Nothing -> Nothing
-                        Just m@(LibModel _ _ args) ->
-                            let models' = LibModel newN newC args : delete m models
+                        Just m@(LibModel _ _ args stdin' stdout' stderr') ->
+                            let m' = LibModel newN newC args stdin' stdout' stderr'
+                                models' = m' : delete m models
                              in return $ Project userModels (Just models') topology
 
 updateProjectWith :: (MonadIO m, MonadThrow m, MonadReader Env m)
@@ -209,7 +211,7 @@ unpackProject temp root = do
 
             writeProjectConfig (root </> pConf) prj
   where
-    process srcRoot dstRoot m@(LibModel name cat _) = do
+    process srcRoot dstRoot m@(LibModel name cat _ _ _ _) = do
         let uModel = toUserModel m
 
         name' <- parseRelDir name
@@ -248,7 +250,7 @@ packProject temp root = do
             ensureDir dstDir
             writeProjectConfig dstPath prj
     where
-      process srcRoot m@(UserModel name _) = do
+      process srcRoot m@(UserModel name _ _ _ _) = do
           name' <- parseRelDir name
           let srcDir = srcRoot </> name'
 
@@ -278,8 +280,8 @@ fillModels (Project uModels lModels t) = do
   where
     modelsToMap = foldl' func M.empty
       where
-        func acc m@(UserModel n _) = M.insert n m acc
-        func acc m@(LibModel n _ _) = M.insert n m acc
+        func acc m@(UserModel n _ _ _ _) = M.insert n m acc
+        func acc m@(LibModel n _ _ _ _ _) = M.insert n m acc
 
     fillModels' pModels tModels libRoot projectRoot execDir =
         M.foldlWithKey func (return M.empty) tModels
@@ -288,7 +290,7 @@ fillModels (Project uModels lModels t) = do
             acc' <- acc
             model <- case M.lookup k pModels of
                 Nothing -> throwM $ NotFoundModelInConfig k
-                Just (UserModel _ execArgs) -> do
+                Just (UserModel _ execArgs modelStdIn modelStdOut modelStdErr) -> do
                     name <- parseRelDir k
                     exec <- parseRelFile k
                     path <- makeAbsolute $ projectRoot </> name
@@ -298,7 +300,7 @@ fillModels (Project uModels lModels t) = do
                     exists <- doesFileExist path
                     unless exists $ throwM $ NotFoundModelExec path
                     return ModelEntity{..}
-                Just (LibModel _ c execArgs) -> do
+                Just (LibModel _ c execArgs modelStdIn modelStdOut modelStdErr) -> do
                     cat <- parseRelDir c
                     name <- parseRelDir k
                     exec <- parseRelFile k
@@ -308,7 +310,6 @@ fillModels (Project uModels lModels t) = do
                     unless exists $ throwM $ NotFoundModelExec path
                     return ModelEntity{..}
             return $ M.insert k model acc'
-
 
 data ProjectException
     = NotFoundProjectConfig !(Path Abs File)

@@ -10,6 +10,7 @@ import Options.Applicative
 
 import Bimo.Commands.New     hiding (new)
 import Bimo.Commands.Build   (BuildOpts(..))
+import Bimo.Commands.Run     (RunOpts(..))
 import Bimo.Commands.Add     (AddOpts(..))
 import Bimo.Commands.Delete  hiding (delete)
 import Bimo.Commands.Rename  (RenameOpts(..))
@@ -20,7 +21,7 @@ import Bimo.Commands.Show    (ShowOpts(..))
 data Command
     = New NewOpts
     | Build BuildOpts
-    | Run
+    | Run RunOpts
     | Add AddOpts
     | Delete DeleteOpts
     | Rename RenameOpts
@@ -59,7 +60,9 @@ new = New <$> opts
     opts = project <|> model
 
 run :: Parser Command
-run = pure Run
+run = Run <$> opts
+  where
+      opts = flag NotSilent Silent (short 's' <> help "Silent mode")
 
 build :: Parser Command
 build = Build <$> opts

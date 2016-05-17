@@ -57,6 +57,7 @@ showModelConfig :: (MonadIO m, MonadThrow m, MonadReader Env m, MonadLogger m)
                 -> m ()
 showModelConfig n c = do
     path <- getModelPath n c
+    checkModelConfigExist path
     colorized <- colorizedConfig $ fromAbsFile path
     logInfoN $ "Model config\n" <> colorized
 

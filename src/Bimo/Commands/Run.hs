@@ -5,11 +5,13 @@
 
 module Bimo.Commands.Run
     ( run
+    , RunOpts(..)
     ) where
 
 import qualified Data.Text as T
 import qualified Data.Map as M
 import Data.List
+import Data.Maybe
 import Data.Monoid
 import Data.Bits ((.|.))
 import Control.Monad
@@ -21,6 +23,7 @@ import Control.Monad.Trans.Control
 import Control.Concurrent.Async.Lifted
 import Path
 import Path.IO
+import System.IO
 import System.Process
 import System.Exit
 import System.Posix.Files
@@ -34,9 +37,13 @@ import Bimo.Model
 import Bimo.Config
 import Bimo.Project
 
+data RunOpts = NotSilent | Silent
+    deriving Show
+
 run :: (MonadIO m, MonadThrow m, MonadMask m, MonadLogger m, MonadReader Env m, MonadBaseControl IO m)
-    => m ()
-run = do
+    => RunOpts
+    -> m ()
+run opts = do
     pConf  <- asks projectConfig
     rDir   <- asks runDir
     curDir <- getCurrentDir
@@ -47,9 +54,11 @@ run = do
         pipes <- mapM (\p -> do
             pipe <- parseRelFile p
             return $ fromAbsFile $ tmpDir </> pipe ) $ topologyToPipes $ topology p
-        let procs = modelsToProcs tmpDir models
 
-        bracketOnError (createPipes pipes >> runProcs procs)
+        let models' = M.toList models
+
+        bracketOnError (do createPipes pipes
+                           mapM (modelToProc opts tmpDir >=> runModel) models')
                        terminate
                        (mapConcurrently waitProc >=> \_ -> return ())
         )
@@ -61,30 +70,58 @@ run = do
         mapM_ (\(n, ph) -> do liftIO $ terminateProcess ph
                               logWarnN $ "Kill model: " <> n) ps
 
+modelToProc :: (MonadIO m, MonadThrow m, MonadMask m, MonadLogger m)
+            => RunOpts
+            -> Path Abs Dir
+            -> (String, ModelEntity)
+            -> m (T.Text, CreateProcess)
+modelToProc flag dir (name, ModelEntity{..}) = do
+    let args = [ intercalate ":" pipesToRead
+               , intercalate ":" pipesToWrite
+               ] ++ execArgs
+        n = T.pack name
+        p = (proc execPath args) { delegate_ctlc = True
+                                 , cwd = Just $ fromAbsDir dir
+                                 }
 
-modelsToProcs :: Path Abs Dir
-              -> M.Map String ModelEntity
-              -> M.Map String CreateProcess
-modelsToProcs dir = M.map func
-  where
-    func ModelEntity{..} =
-        let p = proc execPath $ [ intercalate ":" pipesToRead
-                                , intercalate ":" pipesToWrite
-                                ] ++ execArgs
-         in p { delegate_ctlc = True
-              , cwd = Just $ fromAbsDir dir
-              }
+    procStdIn <- case (modelStdIn, flag) of
+                     (Just inFile, _) -> fileToProcStream inFile ReadMode
+                     (Nothing, _) -> return Inherit
 
-runProcs :: (MonadIO m, MonadThrow m, MonadMask m, MonadLogger m)
-         => M.Map String CreateProcess
-         -> m [(T.Text, ProcessHandle)]
-runProcs = mapM func . M.toList
+    procStdOut <- case (modelStdOut, flag) of
+                      (Just outFile, _) -> fileToProcStream outFile WriteMode
+                      (Nothing, Silent) -> fileToProcStream "/dev/null" WriteMode
+                      (Nothing, NotSilent) -> return Inherit
+
+    procStdErr <- case (modelStdErr, flag) of
+                      (Just errFile, _) -> fileToProcStream errFile WriteMode
+                      (Nothing, Silent) -> fileToProcStream "/dev/null" WriteMode
+                      (Nothing, NotSilent) -> return Inherit
+
+    logInfoN $ T.concat [ "Start model: " <> n
+                        , "\nRun args: "
+                        , T.pack $ show args
+                        , "\nStdin:  "
+                        , T.pack $ maybe "inherited" show modelStdIn
+                        , "\nStdout: "
+                        , T.pack $ maybe "inherited" show modelStdOut
+                        , "\nStderr: "
+                        , T.pack $ maybe "inherited" show modelStdErr
+                        ]
+
+    return $
+        (n, p { std_in = procStdIn, std_out = procStdOut, std_err = procStdErr })
   where
-    func (n, p) = do
-        let name = T.pack n
-        (_, _, _, ph) <- liftIO $ createProcess p
-        logInfoN $ "Start model: " <> name
-        return (name,  ph)
+    fileToProcStream name mode = do
+        hd <- liftIO $ openFile name mode
+        return $ UseHandle hd
+
+runModel :: (MonadIO m, MonadThrow m, MonadMask m, MonadLogger m)
+         => (T.Text, CreateProcess)
+         -> m (T.Text, ProcessHandle)
+runModel (n, p) = do
+    (_, _, _, ph) <- liftIO $ createProcess p
+    return (n,  ph)
 
 waitProc :: (MonadIO m, MonadThrow m, MonadMask m, MonadLogger m, MonadBaseControl IO m)
          => (T.Text, ProcessHandle)

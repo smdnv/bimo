@@ -112,7 +112,7 @@ delete' (DeleteTemplate t f) = do
                                                 , prettyTemplatesList ts
                                                 , "\n"
                                                 ])
-    process path acc (LibModel n c _) = do
+    process path acc (LibModel n c _ _ _ _) = do
         (toDelete, toSkip) <- acc
         paths <- getTemplatesList
         let paths' = delete path paths

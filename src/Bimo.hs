@@ -55,7 +55,7 @@ action args =
     case args of
         New    opts -> new opts
         Build  opts -> build opts
-        Run         -> run
+        Run    opts -> run opts
         Add    opts -> add opts
         Delete opts -> delete' opts
         Rename opts -> rename opts
@@ -71,7 +71,7 @@ colorizedLog loc src level msg = do
                         , "] "
                         , fromLogStr msg
                         ]
-    S8.putStr log
+    S8.putStrLn log
   where
     colorizedLevel lev =
         let l = S8.pack $ drop 5 $ show lev

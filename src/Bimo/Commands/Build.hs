@@ -50,7 +50,7 @@ build BuildProject = do
     maybe (return ()) (buildModels modelsDir) userModels
   where
     buildModels root models =
-        mapM_ (\(UserModel n _) -> do
+        mapM_ (\(UserModel n _ _ _ _) -> do
             name <- parseRelDir n
             let dir = root </> name
             withCurrentDir dir $ build BuildModel) models
@@ -119,7 +119,7 @@ build BuildModel = do
             args = srcFlag ++ dstFlag ++ libFlag
             p = proc script' args
 
-        logInfoN $ T.concat [ "build script: "
+        logInfoN $ T.concat [ "Build script: "
                             , T.pack script'
                             , "\nBuild args:\n"
                             -- , T.intercalate "\n" $ map T.pack args
