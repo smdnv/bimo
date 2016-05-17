@@ -1,0 +1,8 @@
+user-models:
+- user-model-name: model1
+  exec-args: []
+  stdin: input.txt
+  stdout: out.txt
+  stderr: err.txt
+topology:
+- [model1]
