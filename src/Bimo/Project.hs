@@ -53,9 +53,9 @@ prettyTemplateName :: (Monoid a, IsString a) => Path Abs File -> a
 prettyTemplateName =
     fromString . dropTrailingPathSeparator . fromRelDir . dirname . parent
 
-prettyTemplatesList :: (Monoid a, IsString a) => [Path Abs File] -> a
-prettyTemplatesList =
-    foldl' (\acc t -> acc `mappend` prettyTemplateName t `mappend` "\n") mempty
+prettyTemplatesList :: (Monoid a, IsString a) => a -> [Path Abs File] -> a
+prettyTemplatesList prefix =
+    foldl' (\acc t -> acc <> prefix <> prettyTemplateName t <> "\n") mempty
 
 checkProjectConfigExist :: (MonadIO m, MonadThrow m) => Path Abs File -> m ()
 checkProjectConfigExist p = unlessFileExists p $ throwM $ NotFoundProjectConfig p
@@ -144,7 +144,7 @@ copyProjectConfig :: (MonadIO m, MonadThrow m, MonadReader Env m)
 copyProjectConfig src dst = do
     checkProjectConfigExist src
     whenFileExists dst $ throwM $ TemplateAlreadyExists dst
-    ensureDir $ parent dst
+    createDirIfMissing True $ parent dst
     copyFile src dst
 
 deleteTemplate :: (MonadIO m, MonadThrow m, MonadReader Env m)
@@ -218,28 +218,24 @@ unpackProject temp root = do
         cat' <- parseRelDir cat
         return (uModel, (srcRoot </> cat' </> name', dstRoot </> name'))
 
-packProject :: (MonadIO m, MonadThrow m, MonadCatch m, MonadReader Env m)
-            => String
+packProject :: (MonadIO m, MonadThrow m, MonadCatch m, MonadLogger m, MonadReader Env m)
+            => Path Abs Dir
             -> Path Abs Dir
             -> m ()
-packProject temp root = do
-    tDir     <- asks templatesDir
-    tempName <- parseRelDir temp
-    let dstDir = tDir </> tempName
-
-    dstPath <- getTemplatePath temp
-
-    whenFileExists dstPath $ throwM $ TemplateAlreadyExists dstPath
-
+packProject src dst = do
     pConf  <- asks projectConfig
     mDir   <- asks projectModelsDir
-    curDir <- getCurrentDir
-    let conf = curDir </> pConf
-        srcDir = curDir </> mDir
+    let conf = src </> pConf
+        dstPath = dst </> pConf
+        srcDir = src </> mDir
 
-    Project{..} <- readProjectConfig conf
+    p@Project{..} <- readProjectConfig conf
     case userModels of
-        Nothing -> throwM $ NoUserModelsInConfig conf
+        Nothing -> do
+            logInfoN "No user models in project, just add new template"
+
+            createDirIfMissing True dst
+            writeProjectConfig dstPath p
         Just ms -> do
             (models, srcDst) <- mapAndUnzipM (process srcDir) ms
             let lModels = Just $ maybe models (++ models) libModels
@@ -247,7 +243,7 @@ packProject temp root = do
 
             mapM_ (uncurry copyModel) srcDst
 
-            ensureDir dstDir
+            createDirIfMissing True dst
             writeProjectConfig dstPath prj
     where
       process srcRoot m@(UserModel name _ _ _ _) = do
@@ -339,7 +335,7 @@ instance Show ProjectException where
     show (FailedUpdateProjectConfig path) =
         "Failed update project config: " ++ show path
     show (ExistingDependence model templates) =
-        "Existing dependence with templates: \n" ++ prettyTemplatesList templates
+        "Existing dependence with templates: \n" ++ prettyTemplatesList " - " templates
 
 
 

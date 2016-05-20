@@ -91,7 +91,7 @@ copyModel :: (MonadIO m, MonadThrow m, MonadCatch m, MonadReader Env m)
           -> Path Abs Dir
           -> m ()
 copyModel src dst = do
-    ensureDir dst
+    createDirIfMissing True dst
     copyDirRecur src dst
 
 deleteModel :: (MonadIO m, MonadThrow m, MonadCatch m, MonadReader Env m)

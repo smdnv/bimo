@@ -27,6 +27,7 @@ import System.IO
 import System.Process
 import System.Exit
 import System.Posix.Files
+import System.Clock
 
 import Bimo.Types.Env
 import Bimo.Types.Project
@@ -57,10 +58,22 @@ run opts = do
 
         let models' = M.toList models
 
+        start <- liftIO $ getTime Monotonic
+
         bracketOnError (do createPipes pipes
                            mapM (modelToProc opts tmpDir >=> runModel) models')
                        terminate
                        (mapConcurrently waitProc >=> \_ -> return ())
+
+        end <- liftIO $ getTime Monotonic
+
+        let diff = diffTimeSpec end start
+        logInfoN $ T.concat [ "Elapsed time: "
+                            , T.pack $ show $ sec diff
+                            , "."
+                            , T.pack $ take 3 $ show $ nsec diff
+                            , " sec."
+                            ]
         )
   where
       createPipes pipes = liftIO $
@@ -109,7 +122,7 @@ modelToProc flag dir (name, ModelEntity{..}) = do
                         , T.pack $ maybe "inherited" show modelStdErr
                         ]
 
-    return $
+    return
         (n, p { std_in = procStdIn, std_out = procStdOut, std_err = procStdErr })
   where
     fileToProcStream name mode = do

@@ -92,6 +92,13 @@ encodeProjectConfig p =
     let o = keyOrder [ "user-models"
                      , "lib-models"
                      , "topology"
+                     , "user-model-name"
+                     , "lib-model-name"
+                     , "categor"
+                     , "exec-args"
+                     , "stdin"
+                     , "stdout"
+                     , "stderr"
                      ]
         c = setConfCompare o defConfig
      in encodePretty c p

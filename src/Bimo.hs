@@ -27,6 +27,7 @@ import Bimo.Commands.Rename
 import Bimo.Commands.Unpack
 import Bimo.Commands.List
 import Bimo.Commands.Show
+import Bimo.Commands.Clean
 
 bimo :: IO ()
 bimo = do
@@ -62,6 +63,7 @@ action args =
         Unpack opts -> unpack opts
         List   opts -> list opts
         Show   opts -> show' opts
+        Clean       -> clean
         _           -> fail "no command"
 
 colorizedLog :: Loc -> LogSource -> LogLevel -> LogStr -> IO ()

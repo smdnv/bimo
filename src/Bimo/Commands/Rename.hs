@@ -76,7 +76,7 @@ rename RenameModel{..} = do
                                , "\" to \""
                                , prettyName newModelName newModelCat
                                , "\nAnd update templates:\n"
-                               , prettyTemplatesList ts
+                               , prettyTemplatesList " - " ts
                                , "\n(yes/no)? "
                                ]
 

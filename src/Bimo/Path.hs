@@ -50,18 +50,26 @@ userConfirm log yes = do
         "no"    -> liftIO $ putStrLn "Cancel command"
         invalid -> throwM $ AbortCommand invalid
 
-withDir :: (MonadIO m, MonadThrow m, MonadCatch m, MonadLogger m)
-        => String
-        -> (Path Abs Dir -> m ())
-        -> m ()
-withDir dir action = do
+withRelDir :: (MonadIO m, MonadThrow m, MonadCatch m, MonadLogger m)
+           => String
+           -> (Path Abs Dir -> m ())
+           -> m ()
+withRelDir dir action = do
     dir'   <- parseRelDir dir
     curDir <- getCurrentDir
     let root = curDir </> dir'
-    whenDirExists root $ throwM $ DirAlreadyExists root
-    onException (action root)
+
+    withAbsDir root action
+
+withAbsDir :: (MonadIO m, MonadThrow m, MonadCatch m, MonadLogger m)
+        => Path Abs Dir
+        -> (Path Abs Dir -> m ())
+        -> m ()
+withAbsDir dst action = do
+    whenDirExists dst $ throwM $ DirAlreadyExists dst
+    onException (action dst)
                 (do logWarnN "Abort command"
-                    whenDirExists root $ removeDirRecur root)
+                    whenDirExists dst $ removeDirRecur dst)
 
 data PathException
     = DirAlreadyExists !(Path Abs Dir)

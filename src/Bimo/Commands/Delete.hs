@@ -7,6 +7,7 @@ module Bimo.Commands.Delete where
 
 import qualified Data.Text as T
 import Data.List
+import Data.Monoid
 import Control.Monad.Reader
 import Control.Monad.Logger
 import Control.Monad.Catch
@@ -54,7 +55,7 @@ delete' (DeleteModel n c f) = do
             let msg = T.concat [ "Delete model: "
                                , prettyName n c
                                , "\nDependent templates, break if delete model\n"
-                               , prettyTemplatesList ts
+                               , prettyTemplatesList " - " ts
                                , "\nAnyway delete? (yes/no):"
                                ]
             userConfirm (logWarnN msg)
@@ -70,8 +71,8 @@ delete' (DeleteTemplate t f) = do
             case libModels of
                 Nothing -> throwM $ NoLibModelsInConfig tPath
                 Just models -> do
-                    (d, s) <- foldl' (process tPath)
-                                     (return ([], []))
+                    (d, s, nf) <- foldl' (process tPath)
+                                     (return ([], [], []))
                                      models
                     case f' of
                         Skip ->
@@ -92,32 +93,40 @@ delete' (DeleteTemplate t f) = do
     deleteTempSkipMsg s d t =
         T.concat [ "Skip models:\n"
                  , prettyDependency s
-                 , "\nDelete models:\n"
-                 , prettyDependency d
-                 , "\nDelete template: "
+                 , "Delete models:\n"
+                 , prettyDelete d
+                 , "Delete template: "
                  , T.pack t
                  , "? (yes/no)"
                  ]
     deleteTempForceMsg s d t =
         T.concat [ "Delete models used in other templates:\n"
                  , prettyDependency s
-                 , "\nDelete models:\n"
-                 , prettyDependency d
-                 , "\nDelete template: "
+                 , "Delete models:\n"
+                 , prettyDelete d
+                 , "Delete template: "
                  , T.pack t
                  , "? (yes/no)"
                  ]
+    prettyDelete = T.concat . map (\(n, c, _) -> " - " <> prettyName n c <> "\n")
     prettyDependency =
-        T.concat . map (\(n, c, ts) -> T.concat [ prettyName n c
-                                                , prettyTemplatesList ts
-                                                , "\n"
-                                                ])
+        T.concat . map (\(n, c, ts) ->
+            T.concat [ "\""
+                     , prettyName n c
+                     , "\" used in templates:\n"
+                     , prettyTemplatesList " - " ts
+                     , "\n"
+                     ])
     process path acc (LibModel n c _ _ _ _) = do
-        (toDelete, toSkip) <- acc
+        (toDelete, toSkip, notFound) <- acc
         paths <- getTemplatesList
         let paths' = delete path paths
 
-        templates <- getDependentTemplates n c paths'
-        return $ if null templates
-             then ((n, c, templates):toDelete, toSkip)
-             else (toDelete, (n, c, templates):toSkip)
+        templates <- tryJust predicate $ getDependentTemplates n c paths'
+        return $ case templates of
+            Left p -> (toDelete, toSkip, (n, c):notFound)
+            Right ts -> if null ts
+                           then ((n, c, ts):toDelete, toSkip, notFound)
+                           else (toDelete, (n, c, ts):toSkip, notFound)
+    predicate (NotFoundModelConfig p) = Just p
+    predicate _ = Nothing

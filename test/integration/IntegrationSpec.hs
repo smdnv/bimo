@@ -74,6 +74,9 @@ main =
             describe "File logging" $ do
                 test "file-logging" testEnv
 
+            describe "Clean project" $ do
+                test "clean" testEnv
+
   where
     findExec s = do
         p <- findExecutable s

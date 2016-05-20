@@ -61,15 +61,26 @@ bimoFailStderrContent' args ms input = do
     shouldFail ec
     stringContents err ms
 
-doesExist :: FilePath -> IO ()
-doesExist p = do
-    logInfo $ "Does exist: " ++ p
+existTest :: FilePath -> IO Bool
+existTest p = do
     testFile <- doesFileExist p
     testDir <- doesDirectoryExist p
     case (testFile, testDir) of
-        (True, False) -> return ()
-        (False, True) -> return ()
-        (_ ,_) -> error $ "Does not exist: " ++ p
+        (True, False) -> return True
+        (False, True) -> return True
+        (_ ,_) -> return False
+
+doesExist :: FilePath -> IO ()
+doesExist p = do
+    logInfo $ "Does exist: " ++ p
+    exists <- existTest p
+    unless exists $ error $ "Does not exist: " ++ p
+
+doesNotExist :: FilePath -> IO ()
+doesNotExist p = do
+    logInfo $ "Does not exist: " ++ p
+    exists <- existTest p
+    when exists $ error $ "Does exist: " ++ p
 
 fileContents :: FilePath -> [String] -> IO ()
 fileContents file ms = do

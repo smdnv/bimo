@@ -45,15 +45,15 @@ new :: (MonadIO m, MonadThrow m, MonadCatch m, MonadLogger m, MonadReader Env m)
     => NewOpts
     -> m ()
 new NewModel{..} =
-    withDir modelName $ \root -> do
+    withRelDir modelName $ \root -> do
         logInfoN $ T.concat [ "Create new model \""
                             , T.pack modelName
                             , "\""
                             ]
         createEmptyModel modelName modelCat modelLang root
 new NewProject{..} =
-    withDir projectName $ \root -> do
-        logInfoN $ T.concat [ "Create new project\""
+    withRelDir projectName $ \root -> do
+        logInfoN $ T.concat [ "Create new project \""
                             , T.pack projectName
                             , "\""
                             ]
@@ -65,7 +65,17 @@ new NewProject{..} =
                 let dst = root </> pConf
                 createProjectDirs root
                 copyProjectConfig src dst
+
+                logInfoN $ T.concat [ "From template \""
+                                    , T.pack temp
+                                    , "\""
+                                    ]
             Just (TemplateOpts temp True) -> do
                 createProjectDirs root
                 unpackProject temp root
+
+                logInfoN $ T.concat [ "From template \""
+                                    , T.pack temp
+                                    , "\" and unpack template models"
+                                    ]
 

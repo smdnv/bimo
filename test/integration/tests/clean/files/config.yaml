@@ -1,0 +1,5 @@
+user-models:
+- user-model-name: model1
+  exec-args: []
+topology:
+- [model1]

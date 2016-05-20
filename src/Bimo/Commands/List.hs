@@ -59,6 +59,6 @@ list ListTemplates = do
     if null templates
         then logInfoN $ msg <> "Empty"
         else logInfoN $ T.concat [ "Available templates:\n"
-                                 , prettyTemplatesList templates
+                                 , prettyTemplatesList " - " templates
                                  ]
 

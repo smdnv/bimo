@@ -33,7 +33,12 @@ add :: (MonadIO m, MonadThrow m, MonadCatch m, MonadLogger m, MonadReader Env m)
 add AddModel = do
     curDir <- getCurrentDir
     (_, dstDir) <- getModelLibPath curDir
-    copyModel curDir dstDir
+    withAbsDir dstDir $ \dir -> copyModel curDir dir
+
 add AddTemplate{..} = do
-    curDir <- getCurrentDir
-    packProject templateName curDir
+    tDir <- asks templatesDir
+    name <- parseRelDir templateName
+    let dst = tDir </> name
+
+    src <- getCurrentDir
+    withAbsDir dst $ \dir -> packProject src dir

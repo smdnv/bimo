@@ -36,6 +36,6 @@ unpack UnpackOpts{..} = do
     cat <- parseRelDir modelCat
     let srcDir = mDir </> cat </> dir
 
-    withDir modelName $ \root -> copyModel srcDir root
+    withRelDir modelName $ \root -> copyModel srcDir root
 
 

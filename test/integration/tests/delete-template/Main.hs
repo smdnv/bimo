@@ -58,3 +58,11 @@ main = do
     setCurrentDirectory prj2
     bimoFail ["run"]
 
+    -- Successful delete template with Force flag when models from template already deleted
+    setCurrentDirectory prj1
+    bimo ["add", "-t", "new-template1"]
+
+    -- Delete model form new-template1
+    bimo' ["delete", "-m", "model1", "-c", "none", "-f"] "yes"
+    -- Successful delete new-template1
+    bimo' ["delete", "-t", "new-template1", "-s"] "yes"

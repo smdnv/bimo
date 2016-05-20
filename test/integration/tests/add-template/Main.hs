@@ -19,8 +19,7 @@ main = do
 
     -- Fail when template already exists
     bimoFailStderrContent ["add", "-t", "new-template"]
-                          ["Template with this name already exists"]
-
+                          ["Directory already exists"]
     -- Fail when template model already exists
     setCurrentDirectory prj2
     bimo ["build"]

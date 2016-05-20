@@ -30,6 +30,7 @@ library
                      , Bimo.Commands.Unpack
                      , Bimo.Commands.List
                      , Bimo.Commands.Show
+                     , Bimo.Commands.Clean
                      , Bimo.Model
                      , Bimo.Project
                      , Bimo.Config
@@ -55,6 +56,7 @@ library
                      , lifted-async
                      , ansi-terminal
                      , fast-logger
+                     , clock
   default-language:    Haskell2010
 
 executable bimo
