@@ -96,9 +96,9 @@ delete = Delete <$> opts
         <$> strOption (short 't'
             <> metavar "TEMPLATE_NAME"
             <> help "Delete template")
-        <*> (flag' Normal (short 'n' <> help "normal add")
-            <|> flag' Skip (short 's')
-            <|> flag' Force (short 'f'))
+        <*> (flag' Normal (short 'n' <> help "Normal delete")
+            <|> flag' Skip (short 's' <> help "Skip delete")
+            <|> flag' Force (short 'f' <> help "Force delete"))
     opts = model <|>template
 
 rename :: Parser Command
@@ -122,7 +122,7 @@ rename = Rename <$> opts
             <> metavar "NEW_NAME"
             <> help "New model name")
         <*> strOption (short 'C'
-            <> metavar "New_CATEGORY"
+            <> metavar "NEW_CATEGORY"
             <> help "New model category")
         <*> switch (short 'u'
             <> help "Update all dependent templates")
